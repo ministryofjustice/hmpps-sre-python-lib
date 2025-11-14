@@ -1,5 +1,5 @@
 [project]
-name = "hmpps-python-lib"           # distribution name (keeps hyphens)
+name = "hmpps-sre-python-lib"           # distribution name (keeps hyphens)
 version = "0.1.9"
 description = "HMPPS shared Python library"
 readme = "README.md"

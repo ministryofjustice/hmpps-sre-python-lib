@@ -1,6 +1,6 @@
-# hmpps-python-lib
+# hmpps-sre-python-lib
 
-A set of python libraries for use in hmpps SRE projects (and maybe other places)
+A set of python libraries for use in hmpps SRE projects
 
 ## Requirements
 
@@ -25,7 +25,7 @@ source .venv/bin/activate
 and `python your_script.py` can be used as usual.
 
 
-## Using hmpps-python-lib in projects
+## Using hmpps-sre-python-lib in projects
 
 ### Github Actions Workflows
 
@@ -54,7 +54,7 @@ The most convenient way to support uv within a Docker container is to use the pr
 
 `ghcr.io/astral-sh/uv:python3.13-alpine` or `ghcr.io/astral-sh/uv:python3.13-bookworm-slim`
 
-If the python application has been developed locally (see [migration](#migrating-to-hmpps-python-lib) below), a `pyproject.toml` file will already exist, in which case it's simply a case of adding these lines to the Dockerfile:
+If the python application has been developed locally (see [migration](#migrating-to-hmpps-sre-python-lib) below), a `pyproject.toml` file will already exist, in which case it's simply a case of adding these lines to the Dockerfile:
 
 ```
 COPY pyproject.toml .
@@ -113,8 +113,8 @@ The standard [semver](https://semver.org/) formatting of the version should be u
 It's possible to import a version of the library from an active Github branch, so that it can be validated. 
 
 ```
-uv remove hmpps-python-lib
-uv add "hmpps-python-lib @ git+https://github.com/ministryofjustice/hmpps-python-lib.git@feat/HEAT-xxx_your_branch"
+uv remove hmpps-sre-python-lib
+uv add "hmpps-sre-python-lib @ git+https://github.com/ministryofjustice/hmpps-sre-python-lib.git@feat/HEAT-xxx_your_branch"
 uv sync
 ```
 
@@ -136,22 +136,22 @@ The library is then built into a [Python Wheel](https://discuss.python.org/t/whe
 
 ### Refreshing the version in other repositories
 
-If a tool is currently using the hmpps-python-lib library, updating is as simple as either editing the pyproject.toml file in the project's root directory:
+If a tool is currently using the hmpps-sre-python-lib library, updating is as simple as either editing the pyproject.toml file in the project's root directory:
 
 (taking version 0.1.5 as an example by right-clicking the link in the Release Assets and selecting **Copy Link Address**) 
 ```
 [tool.uv.sources]
-hmpps-python-lib = { url = "https://github.com/ministryofjustice/hmpps-python-lib/releases/download/v0.1.5/hmpps_python_lib-0.1.5-py3-none-any.whl" }
+hmpps-sre-python-lib = { url = "https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v0.1.5/hmpps_python_lib-0.1.5-py3-none-any.whl" }
 ```
 
 or you can do:
 ```
-uv remove hmpps-python-lib
-uv add https://github.com/ministryofjustice/hmpps-python-lib/releases/download/v0.1.5/hmpps_python_lib-0.1.5-py3-none-any.whl
+uv remove hmpps-sre-python-lib
+uv add https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v0.1.5/hmpps_python_lib-0.1.5-py3-none-any.whl
 ```
 
 
-## Migrating to hmpps-python-lib
+## Migrating to hmpps-sre-python-lib
 
 Migration comes in four parts:
 
@@ -172,11 +172,11 @@ Then, add the libraries currently mentioned in `requirements.txt` into the proje
 uv add -r requirements.txt
 ```
 
-Add the latest version of the `hmpps-python-lib` library. This can be found in in the [releases section of the hmpps-python-lib repository](https://github.com/ministryofjustice/hmpps-python-lib/releases) - right click the corresponding wheel file (eg `hmpps_python_lib-0.0.3-py3-none-any.whl`) and Copy Link Address. 
+Add the latest version of the `hmpps-sre-python-lib` library. This can be found in in the [releases section of the hmpps-sre-python-lib repository](https://github.com/ministryofjustice/hmpps-sre-python-lib/releases) - right click the corresponding wheel file (eg `hmpps_python_lib-0.0.3-py3-none-any.whl`) and Copy Link Address. 
 
 then run (for example):
 ```
-uv add https://github.com/ministryofjustice/hmpps-python-lib/releases/download/v0.0.3/hmpps_python_lib-0.0.3-py3-none-any.whl
+uv add https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v0.0.3/hmpps_python_lib-0.0.3-py3-none-any.whl
 ```
 
 Finally, run
@@ -205,13 +205,13 @@ If you've got Pylance working correctly, you should be able to delete the local 
 
 ### Fine-tuning the pyproject.toml to remove unnecessary packages
 
-Once the hmpps-python-lib library is in use, it may well be that libraries such as `requests`, `slack-sdk` or `pygithub` that may have been picked up and placed within the `pyproject.toml` when are no longer required. To avoid version clases, and errors like this:
+Once the hmpps-sre-python-lib library is in use, it may well be that libraries such as `requests`, `slack-sdk` or `pygithub` that may have been picked up and placed within the `pyproject.toml` when are no longer required. To avoid version clases, and errors like this:
 
 ```
   × No solution found when resolving dependencies for split (markers: python_full_version >= '3.14' and platform_python_implementation != 'PyPy'):
-  ╰─▶ Because only hmpps-python-lib==0.0.1 is available and hmpps-python-lib==0.0.1 depends on requests>=2.32.5, we can conclude that all versions of hmpps-python-lib depend on
+  ╰─▶ Because only hmpps-sre-python-lib==0.0.1 is available and hmpps-sre-python-lib==0.0.1 depends on requests>=2.32.5, we can conclude that all versions of hmpps-sre-python-lib depend on
       requests>=2.32.5.
-      And because your project depends on hmpps-python-lib and requests==2.32.4, we can conclude that your project's requirements are unsatisfiable.
+      And because your project depends on hmpps-sre-python-lib and requests==2.32.4, we can conclude that your project's requirements are unsatisfiable.
 
       hint: While the active Python version is 3.13, the resolution failed for other Python versions supported by your project. Consider limiting your project's supported Python versions
       using `requires-python`.
@@ -229,9 +229,9 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "dockerfile-parse==2.0.1",
-    "hmpps-python-lib"
+    "hmpps-sre-python-lib"
 ]
 
 [tool.uv.sources]
-hmpps-python-lib = { url = "https://github.com/ministryofjustice/hmpps-python-lib/releases/download/v0.0.2/hmpps_python_lib-0.0.2-py3-none-any.whl" }
+hmpps-sre-python-lib = { url = "https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v0.0.2/hmpps_python_lib-0.0.2-py3-none-any.whl" }
 ```

@@ -253,7 +253,7 @@ wheels = [
 ]
 
 [[package]]
-name = "hmpps-python-lib"
+name = "hmpps-sre-python-lib"
 version = "0.1.9"
 source = { editable = "." }
 dependencies = [
