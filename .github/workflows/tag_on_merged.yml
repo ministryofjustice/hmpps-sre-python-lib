@@ -1,0 +1,124 @@
+name: Build & Auto-Release from main
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]        # Fire only for PRs targeting main
+
+permissions:
+  contents: write           # Needed to create tags and releases
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build-tag-release:
+    # Run only when the PR was actually merged (not just closed)
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main (post-merge)
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0      # fetch all history & tags (needed for tagging)
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build wheel
+        run: python -m build
+
+      - name: Extract version from pyproject.toml
+        id: version
+        shell: bash
+        run: |
+          python - <<'PY' > .version
+          import pathlib, sys
+          try:
+              import tomllib  # Python 3.11+
+          except Exception as e:
+              sys.exit(f"tomllib not available: {e}")
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+          v = (data.get("project", {}).get("version")
+               or data.get("tool", {}).get("poetry", {}).get("version"))
+          if not v:
+              raise SystemExit("No version found in pyproject.toml (project.version or tool.poetry.version).")
+          print(v)
+          PY
+          echo "value=$(cat .version)" >> "$GITHUB_OUTPUT"
+
+      - name: Compute tag name (prefix with 'v')
+        id: tag
+        run: |
+          v="${{ steps.version.outputs.value }}"
+          if [[ "$v" != v* ]]; then tag="v$v"; else tag="$v"; fi
+          echo "value=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Determine wheel asset
+        id: wheel
+        run: |
+          w=$(ls -1 dist/*.whl | head -n 1)
+          if [[ -z "$w" ]]; then
+            echo "No wheel artifact found in dist/"
+            exit 1
+          fi
+          echo "path=$w" >> "$GITHUB_OUTPUT"
+
+      - name: Configure git author (for tagging)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Check if tag already exists (local or remote)
+        id: tag_exists
+        run: |
+          tag="${{ steps.tag.outputs.value }}"
+          # check local
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # check remote
+          git fetch --tags --force --prune
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push annotated tag
+        if: steps.tag_exists.outputs.exists == 'false'
+        run: |
+          tag="${{ steps.tag.outputs.value }}"
+          git tag -a "$tag" -m "Release $tag"
+          git push origin "$tag"
+
+      - name: Create or update GitHub Release and upload wheel
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.tag.outputs.value }}"
+          wheel="${{ steps.wheel.outputs.path }}"
+          # Mark prereleases if version looks like a/b/rc (PEP 440-ish)
+          prerelease_flag=""
+          if [[ "$tag" =~ a[0-9]*$ || "$tag" =~ b[0-9]*$ || "$tag" =~ rc[0-9]*$ ]]; then
+            prerelease_flag="--prerelease"
+          fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag exists; uploading asset (clobbering if present)."
+            gh release upload "$tag" "$wheel" --clobber
+          else
+            gh release create "$tag" "$wheel" \
+              --title "$tag" \
+              --generate-notes $prerelease_flag
+          fi

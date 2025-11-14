@@ -1,0 +1,22 @@
+[project]
+name = "hmpps-python-lib"           # distribution name (keeps hyphens)
+version = "0.1.9"
+description = "HMPPS shared Python library"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "gitpython>=3.1.0",
+  "PyGithub>=2.6.1",
+  "PyYAML==6.0.3",
+  "requests>=2.32.5",
+  "slack-sdk>=3.36.0",
+  "flask>=3.1.2",
+]
+
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+# Tell Hatch exactly which package directory to ship in the wheel:
+[tool.hatch.build.targets.wheel]
+packages = ["src/hmpps"]
