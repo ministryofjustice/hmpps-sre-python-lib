@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout main (post-merge)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0      # fetch all history & tags (needed for tagging)
