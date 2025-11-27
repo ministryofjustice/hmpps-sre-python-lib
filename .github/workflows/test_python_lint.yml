@@ -9,5 +9,5 @@ on:
 jobs:
   python_lint:
     name: python lint
-    uses: ministryofjustice/hmpps-github-actions/.github/workflows/test_python_lint.yml@FEAT/HEAT-864-add-python-ruff-formatter-workflow # WORKFLOW VERSION
+    uses: ministryofjustice/hmpps-github-actions/.github/workflows/test_python_lint.yml@v2 # WORKFLOW VERSION
     secrets: inherit
