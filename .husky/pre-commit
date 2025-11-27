@@ -3,15 +3,6 @@
 
 # Download Ruff configuration file from central location 
 RUFF_CONFIG_FILE="$(git rev-parse --show-toplevel)/.ruff.toml"
-curl -o ${RUFF_CONFIG_FILE} https://raw.githubusercontent.com/ministryofjustice/hmpps-sre-python-lib/feat/HEAT-864-2/ruff.toml
-
-# # Check staged Python files
-# STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
-
-# if [ -z "$STAGED_FILES" ]; then
-#   echo "No Python files to lint."
-#   exit 0
-# fi
 
 # Run Ruff to fix issues
 echo "Running Ruff on all python files ..."
