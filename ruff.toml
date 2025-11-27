@@ -1,8 +1,7 @@
-[tool.ruff]
 line-length = 88
 
-[tool.ruff.lint]
+[lint]
 select = ["E", "F"]
 
-[tool.ruff.format]
+[format]
 indent-style = "space"
