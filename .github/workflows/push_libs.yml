@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -36,6 +36,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.WHEEL_FILE }}
+          files: |
+            ${{ env.WHEEL_FILE }}
+            ruff.toml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
