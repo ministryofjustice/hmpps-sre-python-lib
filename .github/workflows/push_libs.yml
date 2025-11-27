@@ -38,6 +38,6 @@ jobs:
         with:
           files: |
             ${{ env.WHEEL_FILE }}
-            ruff.toml
+            .ruff.toml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
