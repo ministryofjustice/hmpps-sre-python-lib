@@ -2,11 +2,13 @@
 # Run Ruff for Python formatting and enforce no issues before commit
 
 # Download Ruff configuration file from central location 
-RUFF_CONFIG_FILE="$(git rev-parse --show-toplevel)/.ruff.toml"
+BASE_DIR=$(git rev-parse --show-toplevel)
+RUFF_CONFIG_FILE="${BASE_DIR}/.ruff.toml"
 
+echo "file name is " $RUFF_CONFIG_FILE
 # Run Ruff to fix issues
 echo "Running Ruff on all python files ..."
-ruff check . --config ${RUFF_CONFIG_FILE}
+ruff check ${BASE_DIR} --config ${RUFF_CONFIG_FILE}
 
 # Check if Ruff found any issues
 if [ $? -ne 0 ]; then
