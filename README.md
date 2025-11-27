@@ -126,6 +126,13 @@ If you want to validate the library on a deployed version, you'll need to add `g
 RUN apk add --no-cache gcc python3-dev musl-dev linux-headers git ca-certificates && update-ca-certificates
 ```
 
+# Formatting Before Git Commit
+
+Install Husky to enable pre-commit hooks for Python Ruff formatting.
+
+```bash
+npm install husky --save-dev
+
 ### Raising the PR and tagging the release
 
 Raise a PR once the library is fully validated, and once the PR has been merged, the release will be tagged automatically with the version in `pyproject.toml`.

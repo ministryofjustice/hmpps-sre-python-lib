@@ -36,6 +36,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.WHEEL_FILE }}
+          files: |
+            ${{ env.WHEEL_FILE }}
+            ruff.toml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
