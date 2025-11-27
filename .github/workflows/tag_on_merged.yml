@@ -109,6 +109,7 @@ jobs:
         run: |
           tag="${{ steps.tag.outputs.value }}"
           wheel="${{ steps.wheel.outputs.path }}"
+          ruff_config=".ruff.toml"
           # Mark prereleases if version looks like a/b/rc (PEP 440-ish)
           prerelease_flag=""
           if [[ "$tag" =~ a[0-9]*$ || "$tag" =~ b[0-9]*$ || "$tag" =~ rc[0-9]*$ ]]; then
@@ -116,9 +117,9 @@ jobs:
           fi
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "Release $tag exists; uploading asset (clobbering if present)."
-            gh release upload "$tag" "$wheel" --clobber
+            gh release upload "$tag" "$wheel" "$ruff_config" --clobber 
           else
-            gh release create "$tag" "$wheel" \
+            gh release create "$tag" "$wheel" "$ruff_config" \
               --title "$tag" \
               --generate-notes $prerelease_flag
           fi
