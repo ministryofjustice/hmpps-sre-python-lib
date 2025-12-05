@@ -387,7 +387,7 @@ class GithubSession:
       request['request_github_pr_number'] = github_pulls[0].number
       request['output_status'] = 'Updated'
       request['request_github_pr_status'] = 'Updated'
-
+    request['branch_name'] = branch_name
     return request
 
   def delete_old_workflows(self):
