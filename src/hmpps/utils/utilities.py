@@ -1,8 +1,10 @@
 def update_dict(this_dict, key, sub_dict):
   """
-  Updates a dictionary by merging a sub-dictionary into a nested dictionary at a specified key.
+  Updates a dictionary by merging a sub-dictionary into a nested dictionary 
+  at a specified key.
 
-  If the key does not exist in the dictionary, it is initialized with an empty dictionary before updating.
+  If the key does not exist in the dictionary, it is initialized with 
+  an empty dictionary before updating.
 
   Args:
     this_dict (dict): The dictionary to update.
@@ -23,7 +25,8 @@ def fetch_yaml_values_for_key(yaml_data, key):
   and collects all values associated with the specified key.
 
   Args:
-    yaml_data (dict or list): The YAML data to search, typically loaded from a YAML file.
+    yaml_data (dict or list): The YAML data to search, typically loaded from a YAML 
+                              file.
     key (str): The key to search for within the YAML data.
 
   Returns:
@@ -64,10 +67,12 @@ def fetch_yaml_values_for_key(yaml_data, key):
 
 def find_matching_keys(data, search_key):
   """
-  Recursively searches for all values associated with a specified key in a nested dictionary or list structure.
+  Recursively searches for all values associated with a specified key in a nested 
+  dictionary or list structure.
 
   Args:
-    data (dict or list): The data structure to search, which may contain nested dictionaries and/or lists.
+    data (dict or list): The data structure to search, which may contain nested 
+                         dictionaries and/or lists.
     search_key (str): The key to search for within the data structure.
 
   Returns:
