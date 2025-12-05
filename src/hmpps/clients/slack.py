@@ -19,7 +19,7 @@ class Slack:
     try:
       self.slack_client = WebClient(token=slack_params['token'])
     except Exception as e:
-      log_critical('Unable to connect to Slack.')
+      log_critical(f'Unable to connect to Slack. {e}')
       return False
 
   def test_connection(self):
@@ -28,7 +28,7 @@ class Slack:
       log_info('Successfully conected to Slack.')
       return True
     except Exception as e:
-      log_critical('Unable to connect to Slack.')
+      log_critical(f'Unable to connect to Slack. {e}')
       return None
 
   def get_slack_channel_name_by_id(self, slack_channel_id):
@@ -41,7 +41,8 @@ class Slack:
     except SlackApiError as e:
       if 'channel_not_found' in str(e):
         log_info(
-          f'Unable to update Slack channel name - {slack_channel_id} not found or private'
+          f'Unable to update Slack channel name - '
+          f'{slack_channel_id} not found or private'
         )
       else:
         log_error(f'Slack error: {e}')

@@ -3,7 +3,6 @@ import logging
 from hmpps.utils.utilities import update_dict
 from hmpps.services.job_log_handling import (
   log_debug,
-  log_error,
   log_info,
   log_critical,
   log_level,

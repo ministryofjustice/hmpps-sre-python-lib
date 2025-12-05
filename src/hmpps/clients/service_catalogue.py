@@ -41,11 +41,13 @@ class ServiceCatalogue:
     self.key = params['key']
 
     # limit results for testing/dev
-    # See strapi filter syntax https://docs.strapi.io/dev-docs/api/rest/filters-locale-publication
+    # See strapi filter syntax 
+    #   https://docs.strapi.io/dev-docs/api/rest/filters-locale-publication
     # Example filter string = '&filters[name][$contains]=example'
     self.filter = params.get('filter', '')
 
-    self.product_filter = '&fields[0]=slack_channel_id&fields[1]=slack_channel_name&fields[2]=p_id&fields[3]=name'
+    self.product_filter = '&fields[0]=slack_channel_id&fields[1]='
+    'slack_channel_name&fields[2]=p_id&fields[3]=name'
 
     self.api_headers = {
       'Authorization': f'Bearer {self.key}',
@@ -53,11 +55,18 @@ class ServiceCatalogue:
       'Accept': 'application/json',
     }
     self.components = 'components'
-    self.components_get = f'{self.components}?populate[latest_commit]=true&populate[product]=true&populate[envs]=true{self.filter}{pagination_page_size}{sort_filter}'
+    self.components_get = f'{self.components}?populate[latest_commit]=true&populate'
+    '[product]=true&populate[envs]=true{self.filter}{pagination_page_size}{sort_filter}'
 
     self.products = 'products'
-    self.products_get = f'{self.products}?populate[parent]=true&populate[children]=true&populate[product_set]=true&populate[service_area]=true&populate[team]=true{self.product_filter}{pagination_page_size}{sort_filter}'
-    self.sharepoint_discovery_products_get = f'{self.products}?populate[parent]=true&populate[children]=true&populate[product_set]=true&populate[service_area]=true&populate[team]=true{pagination_page_size}{sort_filter}'
+
+    self.products_get = f'{self.products}?populate[parent]=true&populate[children]='
+    'true&populate[product_set]=true&populate[service_area]=true&populate[team]=true'
+    f'{self.product_filter}{pagination_page_size}{sort_filter}'
+
+    self.sharepoint_discovery_products_get = f'{self.products}?populate[parent]=true&'
+    'populate[children]=true&populate[product_set]=true&populate[service_area]=true'
+    f'&populate[team]=true{pagination_page_size}{sort_filter}'
 
     self.github_teams = 'github-teams'
     self.environments = 'environments'
@@ -190,7 +199,8 @@ class ServiceCatalogue:
 
   def get_all_records(self, table):
     log_info(
-      f'Getting all records from table {table} in Service Catalogue using URL: {self.url}/v1/{table}'
+      f'Getting all records from table {table} in Service Catalogue using URL: '
+      f'{self.url}/v1/{table}'
     )
     return self.get_with_retry(table)
 
@@ -215,23 +225,27 @@ class ServiceCatalogue:
   def get_filtered_records(self, match_table, match_field, match_string):
     try:
       r = requests.get(
-        f'{self.url}/v1/{match_table}?filters[{match_field}][$eq]={match_string.replace("&", "&amp;")}',
+        f'{self.url}/v1/{match_table}?filters[{match_field}][$eq]='
+        f'{match_string.replace("&", "&amp;")}',
         headers=self.api_headers,
         timeout=10,
       )
       if r.status_code == 200 and r.json()['data']:
         sc_id = r.json()['data'][0]['id']
         log_debug(
-          f'Successfully found Service Catalogue ID for {match_field}={match_string} in {match_table}: {sc_id}'
+          f'Successfully found Service Catalogue ID for {match_field}={match_string} '
+          f'in {match_table}: {sc_id}'
         )
         return r.json()['data']
       log_warning(
-        f'Could not find Service Catalogue ID for {match_field}={match_string} in {match_table}'
+        f'Could not find Service Catalogue ID for {match_field}={match_string} '
+        f'in {match_table}'
       )
       return None
     except Exception as e:
       log_error(
-        f'Error getting Service Catalogue ID for {match_field}={match_string} in {match_table}: {e} - {r.status_code} {r.content}'
+        f'Error getting Service Catalogue ID for {match_field}={match_string} in '
+        f'{match_table}: {e} - {r.status_code} {r.content}'
       )
       return None
 
@@ -256,16 +270,19 @@ class ServiceCatalogue:
       )
       if x.status_code == 200:
         log_info(
-          f'Successfully updated record {element_id} in {table.split("/")[-1]}: {x.status_code}'
+          f'Successfully updated record {element_id} in {table.split("/")[-1]}: '
+          f'{x.status_code}'
         )
       else:
         log_error(
-          f'Received non-200 response from service catalogue for record id {element_id} in {table.split("/")[-1]}: {x.status_code} {x.content}'
+          f'Received non-200 response from service catalogue for record id {element_id}'
+           f' in {table.split("/")[-1]}: {x.status_code} {x.content}'
         )
         return False
     except Exception as e:
       log_error(
-        f'Error updating service catalogue for record id {element_id} in {table.split("/")[-1]}: {e}'
+        f'Error updating service catalogue for record id {element_id} '
+        f'in {table.split("/")[-1]}: {e}'
       )
       return False
     return True
@@ -281,11 +298,14 @@ class ServiceCatalogue:
       )
       if x.status_code == 201:
         log_info(
-          f'Successfully added {(data["team_name"] if "team_name" in data else data["name"])} to {table.split("/")[-1]}: {x.status_code}'
+          f'Successfully added '
+          f'{(data["team_name"] if "team_name" in data else data["name"])} '
+          f'to {table.split("/")[-1]}: {x.status_code}'
         )
       else:
         log_error(
-          f'Received non-201 response from service catalogue to add a record to {table.split("/")[-1]}: {x.status_code} {x.content}'
+          f'Received non-201 response from service catalogue to add a record to '
+          f'{table.split("/")[-1]}: {x.status_code} {x.content}'
         )
         return False
     except Exception as e:
@@ -305,16 +325,19 @@ class ServiceCatalogue:
       )
       if 200 <= x.status_code < 300:
         log_info(
-          f'Successfully deleted record {element_id} from {table.split("/")[-1]}: {x.status_code}'
+          f'Successfully deleted record {element_id} from {table.split("/")[-1]}: '
+          f'{x.status_code}'
         )
       else:
         log_error(
-          f'Received non-2xx response from service catalogue deleting record id {element_id} in {table.split("/")[-1]}: {x.status_code} {x.content}'
+          f'Received non-2xx response from service catalogue deleting record id '
+          f'{element_id} in {table.split("/")[-1]}: {x.status_code} {x.content}'
         )
         return False
     except Exception as e:
       log_error(
-        f'Error deleting record {element_id} from {table.split("/")[-1]} in service catalogue: {e}'
+        f'Error deleting record {element_id} from {table.split("/")[-1]} '
+        f'in service catalogue: {e}'
       )
       return False
     return True
@@ -331,16 +354,19 @@ class ServiceCatalogue:
       )
       if x.status_code == 200:
         log_info(
-          f'Successfully unpublished record {element_id} in {table.split("/")[-1]}: {x.status_code}'
+          f'Successfully unpublished record {element_id} in {table.split("/")[-1]}: '
+          f'{x.status_code}'
         )
       else:
         log_info(
-          f'Received non-200 response from service catalogue for record id {element_id} in {table.split("/")[-1]}: {x.status_code} {x.content}'
+          f'Received non-200 response from service catalogue for record id {element_id}'
+           f' in {table.split("/")[-1]}: {x.status_code} {x.content}'
         )
         return False
     except Exception as e:
       log_error(
-        f'Error updating service catalogue for record id {element_id} in {table.split("/")[-1]}: {e}'
+        f'Error updating service catalogue for record id {element_id} in '
+        f'{table.split("/")[-1]}: {e}'
       )
       return False
     return True
@@ -353,12 +379,14 @@ class ServiceCatalogue:
     if json_data := self.get_with_retry(uri):
       if sc_id := json_data[0].get('documentId'):
         log_debug(
-          f'Successfully found Service Catalogue documentID for {match_field}={match_string} in {match_table}: {sc_id}'
+          f'Successfully found Service Catalogue documentID for '
+          f'{match_field}={match_string} in {match_table}: {sc_id}'
         )
         return sc_id
       else:
         log_warning(
-          f'Could not find Service Catalogue documentID for {match_field}={match_string} in {match_table}'
+          f'Could not find Service Catalogue documentID for '
+          f'{match_field}={match_string} in {match_table}'
         )
         return None
 
@@ -368,12 +396,14 @@ class ServiceCatalogue:
       if env_obj.get('name') == env:
         env_id = env_obj.get('documentId')
         log_debug(
-          f'Found existing environment ID for {env} in component {component.get("name")}: {env_id}'
+          f'Found existing environment ID for {env} in component '
+          f'{component.get("name")}: {env_id}'
         )
         break
     if not env_id:
       log_debug(
-        f'No existing environment ID found for {env} in component {component.get("name")}'
+        f'No existing environment ID found for {env} in component '
+        f'{component.get("name")}'
       )
     return env_id
 

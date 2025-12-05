@@ -86,7 +86,8 @@ class GithubSession:
       'Accept': 'application/vnd.github.v3+json',
     }
     response = requests.post(
-      f'https://api.github.com/app/installations/{self.app_installation_id}/access_tokens',
+      f'https://api.github.com/app/installations/{self.app_installation_id}'
+      '/access_tokens',
       headers=headers,
     )
     response.raise_for_status()
@@ -194,7 +195,7 @@ class GithubSession:
       if data:
         for alert in (a for a in data if a.state != 'fixed'):
           # log_debug(
-          #   f'\n\nalert is: {json.dumps(alert.raw_data, indent=2)}\n============================'
+          #   f'\n\nalert is: {json.dumps(alert.raw_data, indent=2)}\n================'
           # )
           # some alerts don't have severity levels
           if alert.rule.security_severity_level:
@@ -342,7 +343,8 @@ class GithubSession:
         create_file = True
       else:
         log_error(
-          f'Failed to update requests/{request_json_file} in {self.bootstrap_repo.name} - {e.data} - please fix this this and re-run'
+          f'Failed to update requests/{request_json_file} '
+          f'in {self.bootstrap_repo.name} - {e.data} - please fix this this and re-run'
         )
         sys.exit(1)
 
@@ -351,13 +353,15 @@ class GithubSession:
         log_debug(f'Creating file: {request_json_file}')
         self.bootstrap_repo.create_file(
           f'requests/{request_json_file}',
-          f'Creating requests/{request_json_file} with details for {request.get("github_repo")}',
+          f'Creating requests/{request_json_file} with details for '
+          f'{request.get("github_repo")}',
           json.dumps(request_json, indent=2),
           branch=branch_name,
         )
       except GithubException as e:
         log_error(
-          f'Failed to create requests/{request_json_file} in {self.bootstrap_repo.name} - {e.data} - please fix this this and re-run'
+          f'Failed to create requests/{request_json_file} in '
+          f'{self.bootstrap_repo.name} - {e.data} - please fix this this and re-run'
         )
         sys.exit(1)
 
@@ -408,7 +412,8 @@ class GithubSession:
 
     except GithubException as e:
       log_warning(
-        f'Encountered an issue removing old workflow runs in {self.bootstrap_repo.name} - {e.data} - please fix this this and re-run'
+        f'Encountered an issue removing old workflow runs in '
+        f'{self.bootstrap_repo.name} - {e.data} - please fix this this and re-run'
       )
 
   def create_repo(self, project_params):
@@ -429,7 +434,8 @@ class GithubSession:
 
       if not repo_ready:
         log_error(
-          f'Repository {project_params["github_repo"]} not ready after 10 attempts - please check and re-run'
+          f'Repository {project_params["github_repo"]} not ready after 10 attempts - '
+          'please check and re-run'
         )
         sys.exit(1)
 
@@ -450,7 +456,8 @@ class GithubSession:
 
       # Make the request to create a new repository from a template
       response = requests.post(
-        f'https://api.github.com/repos/{project_params["github_org"]}/{project_params["github_template_repo"]}/generate',
+        f'https://api.github.com/repos/{project_params["github_org"]}'
+        f'/{project_params["github_template_repo"]}/generate',
         headers=headers,
         json=data,
       )
@@ -515,7 +522,8 @@ class GithubSession:
         repo.create_file(file_name, 'commit', file_contents)
       except GithubException as e:
         log_error(
-          f'Failed to create Github README.md - {e.data} - please correct this and re-run'
+          'Failed to create Github README.md - '
+          f'{e.data} - please correct this and re-run'
         )
         sys.exit(1)
 
@@ -571,7 +579,8 @@ class GithubSession:
         runner_group_id = runner_group['id']
       else:
         log_error(
-          f'Runner group {runner_group_name} not found - not possible to add repository {repo_name} to runner group'
+          f'Runner group {runner_group_name} not found -'
+          f'not possible to add repository {repo_name} to runner group'
         )
         return False
     except GithubException as e:
@@ -580,12 +589,14 @@ class GithubSession:
 
     try:
       r = requests.put(
-        f'https://api.github.com/orgs/{self.org.login}/actions/runner-groups/{runner_group_id}/repositories/{repo_id}',
+        f'https://api.github.com/orgs/{self.org.login}/actions/runner-groups/'
+        f'{runner_group_id}/repositories/{repo_id}',
         headers=headers,
       )
       r.raise_for_status()
       log_info(
-        f'Repo {repo_name} added to runner group {runner_group_name} (id: {runner_group_id}).'
+        f'Repo {repo_name} added to runner group {runner_group_name}'
+         f' (id: {runner_group_id}).'
       )
     except GithubException as e:
       log_error(

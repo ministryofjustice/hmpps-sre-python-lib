@@ -20,7 +20,8 @@ class AlertmanagerData:
         yaml_config_data = yaml.safe_load(formatted_config_data)
         self.json_config_data = json.loads(json.dumps(yaml_config_data))
         # log_debug(
-        #   f'Alertmanager data:\n=================\n\n{json.dumps(self.json_config_data, indent=2)}\n\n'
+        #   f'Alertmanager data:\n=================\n\n
+        #     {json.dumps(self.json_config_data, indent=2)}\n\n'
         # )
         log_info('Successfully fetched Alertmanager data')
       else:
@@ -61,7 +62,8 @@ class AlertmanagerData:
             slack_configs = receiver.get('slack_configs', [])
             if slack_configs:
               log_info(
-                f'Found slack_channel for {receiver_name} - {slack_configs[0].get("channel")}'
+                f'Found slack_channel for {receiver_name} - '
+                f'{slack_configs[0].get("channel")}'
               )
               return slack_configs[0].get('channel')
             else:
