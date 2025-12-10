@@ -5,3 +5,4 @@ select = ["E", "F"]
 
 [format]
 indent-style = "space"
+quote-style = "single"
