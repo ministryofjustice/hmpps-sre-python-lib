@@ -1,6 +1,6 @@
 [project]
 name = "hmpps-sre-python-lib"           # distribution name (keeps hyphens)
-version = "0.1.11"
+version = "0.1.12"
 description = "HMPPS shared Python library"
 readme = "README.md"
 requires-python = ">=3.12"

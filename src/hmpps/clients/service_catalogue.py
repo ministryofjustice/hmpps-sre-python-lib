@@ -41,7 +41,7 @@ class ServiceCatalogue:
     self.key = params['key']
 
     # limit results for testing/dev
-    # See strapi filter syntax 
+    # See strapi filter syntax
     #   https://docs.strapi.io/dev-docs/api/rest/filters-locale-publication
     # Example filter string = '&filters[name][$contains]=example'
     self.filter = params.get('filter', '')
@@ -55,19 +55,22 @@ class ServiceCatalogue:
       'Accept': 'application/json',
     }
     self.components = 'components'
-    self.components_get = f'{self.components}?populate[latest_commit]=true&populate'
-    '[product]=true&populate[envs]=true{self.filter}{pagination_page_size}{sort_filter}'
-
+    self.components_get = (
+      f'{self.components}?populate[latest_commit]=true&populate'
+      f'[product]=true&populate[envs]=true{self.filter}{pagination_page_size}{sort_filter}'
+    )
     self.products = 'products'
 
-    self.products_get = f'{self.products}?populate[parent]=true&populate[children]='
-    'true&populate[product_set]=true&populate[service_area]=true&populate[team]=true'
-    f'{self.product_filter}{pagination_page_size}{sort_filter}'
-
-    self.sharepoint_discovery_products_get = f'{self.products}?populate[parent]=true&'
-    'populate[children]=true&populate[product_set]=true&populate[service_area]=true'
-    f'&populate[team]=true{pagination_page_size}{sort_filter}'
-
+    self.products_get = (
+      f'{self.products}?populate[parent]=true&populate[children]='
+      'true&populate[product_set]=true&populate[service_area]=true&populate[team]=true'
+      f'{self.product_filter}{pagination_page_size}{sort_filter}'
+    )
+    self.sharepoint_discovery_products_get = (
+      f'{self.products}?populate[parent]=true&'
+      'populate[children]=true&populate[product_set]=true&populate[service_area]=true'
+      f'&populate[team]=true{pagination_page_size}{sort_filter}'
+    )
     self.github_teams = 'github-teams'
     self.environments = 'environments'
     self.environments_get = (
@@ -136,7 +139,7 @@ class ServiceCatalogue:
     timeout: int = 10,
   ) -> List[Any]:
     """
-    Fetch all pages for the given `uri`, aggregating the `field` array from each page.
+    Fetch all pages for the given `uri`, aggregating the `field` array.
     - Retries each page up to `max_retries` times with exponential backoff.
     - Preserves any existing query params on `uri`.
     """
@@ -176,7 +179,7 @@ class ServiceCatalogue:
     timeout: int = 10,
   ) -> Dict[str, Any]:
     """
-    Fetch all pages for the given `uri`, aggregating the `field` array from each page.
+    Fetch all pages for the given `uri`, aggregating the `field` array.
     - Retries each page up to `max_retries` times with exponential backoff.
     - Preserves any existing query params on `uri`.
     """
@@ -233,8 +236,8 @@ class ServiceCatalogue:
       if r.status_code == 200 and r.json()['data']:
         sc_id = r.json()['data'][0]['id']
         log_debug(
-          f'Successfully found Service Catalogue ID for {match_field}={match_string} '
-          f'in {match_table}: {sc_id}'
+          f'Successfully found Service Catalogue ID for {match_field}='
+          f'{match_string} in {match_table}: {sc_id}'
         )
         return r.json()['data']
       log_warning(
@@ -244,8 +247,8 @@ class ServiceCatalogue:
       return None
     except Exception as e:
       log_error(
-        f'Error getting Service Catalogue ID for {match_field}={match_string} in '
-        f'{match_table}: {e} - {r.status_code} {r.content}'
+        f'Error getting Service Catalogue ID for {match_field}={match_string} '
+        f'in {match_table}: {e}'
       )
       return None
 
@@ -270,13 +273,14 @@ class ServiceCatalogue:
       )
       if x.status_code == 200:
         log_info(
-          f'Successfully updated record {element_id} in {table.split("/")[-1]}: '
-          f'{x.status_code}'
+          f'Successfully updated record {element_id} in'
+          f' {table.split("/")[-1]}: {x.status_code}'
         )
       else:
         log_error(
-          f'Received non-200 response from service catalogue for record id {element_id}'
-           f' in {table.split("/")[-1]}: {x.status_code} {x.content}'
+          f'Received non-200 response from service catalogue for record id'
+          f' {element_id} in {table.split("/")[-1]}: {x.status_code}'
+          f' {x.content}'
         )
         return False
     except Exception as e:
@@ -360,7 +364,7 @@ class ServiceCatalogue:
       else:
         log_info(
           f'Received non-200 response from service catalogue for record id {element_id}'
-           f' in {table.split("/")[-1]}: {x.status_code} {x.content}'
+          f' in {table.split("/")[-1]}: {x.status_code} {x.content}'
         )
         return False
     except Exception as e:

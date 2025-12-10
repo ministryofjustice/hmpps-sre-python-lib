@@ -1,7 +1,9 @@
 line-length = 88
+indent-width = 2
 
 [lint]
 select = ["E", "F"]
 
 [format]
 indent-style = "space"
+quote-style = "single"
