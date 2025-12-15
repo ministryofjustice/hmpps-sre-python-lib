@@ -1,9 +1,9 @@
 [project]
 name = "hmpps-sre-python-lib"           # distribution name (keeps hyphens)
-version = "0.1.12"
+version = "0.1.13"
 description = "HMPPS shared Python library"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
   "gitpython>=3.1.0",
   "PyGithub>=2.6.1",
@@ -11,6 +11,7 @@ dependencies = [
   "requests>=2.32.5",
   "slack-sdk>=3.36.0",
   "flask>=3.1.2",
+  "urllib3>=2.6.0",
 ]
 
 [build-system]
