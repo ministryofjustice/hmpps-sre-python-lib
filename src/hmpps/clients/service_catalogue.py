@@ -46,9 +46,10 @@ class ServiceCatalogue:
     # Example filter string = '&filters[name][$contains]=example'
     self.filter = params.get('filter', '')
 
-    self.product_filter = '&fields[0]=slack_channel_id&fields[1]='
-    'slack_channel_name&fields[2]=p_id&fields[3]=name'
-
+    self.product_filter = (
+      '&fields[0]=slack_channel_id&fields[1]='
+      'slack_channel_name&fields[2]=p_id&fields[3]=name'
+    )
     self.api_headers = {
       'Authorization': f'Bearer {self.key}',
       'Content-Type': 'application/json',
