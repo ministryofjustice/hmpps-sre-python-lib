@@ -13,3 +13,5 @@
 0.1.10  - Added Python Ruff formatter
 0.1.11  - Added branch name to the GitHub PR request response.
 0.1.12  - Fix for malformed service catalogue queries
+0.1.13  - Patch for urllib3 to fix to >2.6.0 (vulnerability)
+0.1.14  - Fix for one more malformed service catalogue query (product_filter)
