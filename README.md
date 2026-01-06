@@ -48,11 +48,11 @@ and then replacing any invocation of `python ...` with `uv run python ...` eg:
 
 ### Docker Images
 
-In general, an image like `python:3.13-slim` will be used for existing Python scripts
+In general, an image like `ghcr.io/ministryofjustice/hmpps-python:python3.13-alpine` will be used for existing Python scripts
 
 The most convenient way to support uv within a Docker container is to use the pre-packaged uv image, so:
 
-`ghcr.io/astral-sh/uv:python3.13-alpine` or `ghcr.io/astral-sh/uv:python3.13-bookworm-slim`
+`ghcr.io/ministryofjustice/hmpps-python:python3.13-alpine` or `ghcr.io/astral-sh/uv:python3.13-bookworm-slim`
 
 If the python application has been developed locally (see [migration](#migrating-to-hmpps-sre-python-lib) below), a `pyproject.toml` file will already exist, in which case it's simply a case of adding these lines to the Dockerfile:
 
@@ -132,6 +132,7 @@ Install Husky to enable pre-commit hooks for Python Ruff formatting.
 
 ```bash
 npm install husky --save-dev
+```
 
 ### Raising the PR and tagging the release
 
