@@ -15,3 +15,4 @@
 0.1.12  - Fix for malformed service catalogue queries
 0.1.13  - Patch for urllib3 to fix to >2.6.0 (vulnerability)
 0.1.14  - Fix for one more malformed service catalogue query (product_filter)
+0.1.15  - Include a rest token when authenticating to Github using a private key
