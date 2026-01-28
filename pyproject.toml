@@ -12,6 +12,7 @@ dependencies = [
   "slack-sdk>=3.36.0",
   "flask>=3.1.2",
   "urllib3>=2.6.0",
+  "pytest>=9.0.2",
 ]
 
 [build-system]
@@ -21,3 +22,9 @@ build-backend = "hatchling.build"
 # Tell Hatch exactly which package directory to ship in the wheel:
 [tool.hatch.build.targets.wheel]
 packages = ["src/hmpps"]
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+pypath = "src"
