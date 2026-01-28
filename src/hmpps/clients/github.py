@@ -27,6 +27,12 @@ class GithubSession:
       self.private_key = b64decode(params.get('app_private_key')).decode('ascii')
       self.app_id = params.get('app_id')
       self.app_installation_id = params['app_installation_id']
+      # get a rest access token to exchange for a session token
+      try:
+        self.rest_token = self.get_access_token()
+      except GithubException as g:
+        log_critical(f'Unable to get a Github access token - {g}')
+        sys.exit(1)
     # Github access token passed in
     elif params.get('github_access_token'):
       self.token = Auth.Token(params.get('github_access_token'))
@@ -59,15 +65,15 @@ class GithubSession:
     # if the authentication is with a private key, get a fresh token
     if self.private_key:
       try:
-        self.token = Auth.Token(self.get_access_token())
+        self.token = Auth.Token(self.rest_token)
       except GithubException as g:
-        log_critical(f'Unable to get a Github access token - {g}')
+        log_critical(f'Unable to authenticate to the github API - {g}')
         sys.exit(1)
     # Then initiate a session with the token
     try:
       self.session = Github(auth=self.token, pool_size=50)
     except GithubException as e:
-      log_critical(f'Unable to authenticate to the github API {e}')
+      log_critical(f'Unable to authenticate to the github API - {e}')
       sys.exit(1)
       # Refresh the org object
     try:
@@ -596,7 +602,7 @@ class GithubSession:
       r.raise_for_status()
       log_info(
         f'Repo {repo_name} added to runner group {runner_group_name}'
-         f' (id: {runner_group_id}).'
+        f' (id: {runner_group_id}).'
       )
     except GithubException as e:
       log_error(
