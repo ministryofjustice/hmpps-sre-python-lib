@@ -23,11 +23,11 @@ class GithubSession:
     # Don't progress if there's no private key or access token
     if not params.get('app_private_key') and not params.get('github_access_token'):
       log_error(
-        'app_private_key or github_access_token are required to initiate a Github Session'
+        'app_private_key or github_access_token are needed to initiate a Github Session'
       )
       sys.exit(1)
 
-    # Sort out the parameters depending on authenticaiton type
+    # set the parameters depending on authentication type
     if params.get('app_private_key'):
       self.private_key = b64decode(params.get('app_private_key')).decode('ascii')
       self.app_id = params.get('app_id')
@@ -39,25 +39,25 @@ class GithubSession:
     self.org_name = params.get('org', 'ministryofjustice')
 
     # Create a session with a private key
-    self.session = None
     self.auth()
-    if self.session:
-      try:
-        rate_limit = self.session.get_rate_limit()
-        self.core_rate_limit = rate_limit.resources.core
-        log_info(f'Github API - rate limit: {rate_limit}')
-      except Exception as e:
-        log_critical(f'Unable to get github rate limit - {e}')
+    try:
+      rate_limit = self.session.get_rate_limit()
+      self.core_rate_limit = rate_limit.resources.core
+      log_info(f'Github API - rate limit: {rate_limit}')
+    except Exception as e:
+      log_error(f'Unable to get github rate limit - {e}')
+
     # Bootstrap repo parameter for bootstrapping
     if github_bootstrap_repo := params.get('github_bootstrap_repo'):
       self.bootstrap_repo = self.org.get_repo(f'{github_bootstrap_repo}')
       log_debug(
-        f'Initialised GithubProject with bootstrap repo: {self.bootstrap_repo.name}'
+        f'Initialised Github project with bootstrap repo: {self.bootstrap_repo.name}'
       )
     else:
       self.bootstrap_repo = None
 
   def auth(self):
+    self.session = None
     log_debug('Authenticating to Github')
     # if the authentication is with a private key, get a fresh token
     if self.private_key:
