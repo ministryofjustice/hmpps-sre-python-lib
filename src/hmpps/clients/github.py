@@ -20,62 +20,61 @@ from hmpps.services.job_log_handling import (
 
 class GithubSession:
   def __init__(self, params):
-    self.private_key = None
-    self.org_name = params.get('org', 'ministryofjustice')
-    # Create a session with a private key
+    # Don't progress if there's no private key or access token
+    if not params.get('app_private_key') and not params.get('github_access_token'):
+      log_error(
+        'app_private_key or github_access_token are needed to initiate a Github Session'
+      )
+      sys.exit(1)
+
+    # set the parameters depending on authentication type
     if params.get('app_private_key'):
       self.private_key = b64decode(params.get('app_private_key')).decode('ascii')
       self.app_id = params.get('app_id')
       self.app_installation_id = params['app_installation_id']
-      # get a rest access token to exchange for a session token
-      try:
-        self.rest_token = self.get_access_token()
-      except GithubException as g:
-        log_critical(f'Unable to get a Github access token - {g}')
-        sys.exit(1)
-    # Github access token passed in
-    elif params.get('github_access_token'):
-      self.token = Auth.Token(params.get('github_access_token'))
-      self.rest_token = params.get('github_access_token')
-    # Neither - give up
     else:
-      log_error(
-        'Need app_private_key or github_access_token to initiate a Github Session'
-      )
-      sys.exit(1)
+      self.private_key = self.app_id = self.app_installation_id = ''
+      self.rest_token = params.get('github_access_token')
+
+    self.org_name = params.get('org', 'ministryofjustice')
+
+    # Create a session with a private key
     self.auth()
-    if self.session:
-      try:
-        rate_limit = self.session.get_rate_limit()
-        self.core_rate_limit = rate_limit.resources.core
-        log_info(f'Github API - rate limit: {rate_limit}')
-      except Exception as e:
-        log_critical(f'Unable to get github rate limit - {e}')
+    try:
+      rate_limit = self.session.get_rate_limit()
+      self.core_rate_limit = rate_limit.resources.core
+      log_info(f'Github API - rate limit: {rate_limit}')
+    except Exception as e:
+      log_error(f'Unable to get github rate limit - {e}')
+
     # Bootstrap repo parameter for bootstrapping
     if github_bootstrap_repo := params.get('github_bootstrap_repo'):
       self.bootstrap_repo = self.org.get_repo(f'{github_bootstrap_repo}')
       log_debug(
-        f'Initialised GithubProject with bootstrap repo: {self.bootstrap_repo.name}'
+        f'Initialised Github project with bootstrap repo: {self.bootstrap_repo.name}'
       )
     else:
       self.bootstrap_repo = None
 
   def auth(self):
+    self.session = None
     log_debug('Authenticating to Github')
     # if the authentication is with a private key, get a fresh token
     if self.private_key:
       try:
-        self.token = Auth.Token(self.rest_token)
+        self.rest_token = self.get_access_token()
       except GithubException as g:
         log_critical(f'Unable to authenticate to the github API - {g}')
         sys.exit(1)
     # Then initiate a session with the token
+    self.token = Auth.Token(self.rest_token)
     try:
       self.session = Github(auth=self.token, pool_size=50)
     except GithubException as e:
-      log_critical(f'Unable to authenticate to the github API - {e}')
+      log_critical(f'Unable to create a session using the github API - {e}')
       sys.exit(1)
-      # Refresh the org object
+
+    # Refresh the org object
     try:
       self.org = self.session.get_organization(self.org_name)
     except GithubException as e:
