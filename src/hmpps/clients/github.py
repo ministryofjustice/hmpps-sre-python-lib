@@ -20,29 +20,26 @@ from hmpps.services.job_log_handling import (
 
 class GithubSession:
   def __init__(self, params):
-    self.private_key = None
-    self.org_name = params.get('org', 'ministryofjustice')
-    # Create a session with a private key
+    # Don't progress if there's no private key or access token
+    if not params.get('app_private_key') and not params.get('github_access_token'):
+      log_error(
+        'app_private_key or github_access_token are required to initiate a Github Session'
+      )
+      sys.exit(1)
+
+    # Sort out the parameters depending on authenticaiton type
     if params.get('app_private_key'):
       self.private_key = b64decode(params.get('app_private_key')).decode('ascii')
       self.app_id = params.get('app_id')
       self.app_installation_id = params['app_installation_id']
-      # get a rest access token to exchange for a session token
-      try:
-        self.rest_token = self.get_access_token()
-      except GithubException as g:
-        log_critical(f'Unable to get a Github access token - {g}')
-        sys.exit(1)
-    # Github access token passed in
-    elif params.get('github_access_token'):
-      self.token = Auth.Token(params.get('github_access_token'))
-      self.rest_token = params.get('github_access_token')
-    # Neither - give up
     else:
-      log_error(
-        'Need app_private_key or github_access_token to initiate a Github Session'
-      )
-      sys.exit(1)
+      self.private_key = self.app_id = self.app_installation_id = ''
+      self.rest_token = params.get('github_access_token')
+
+    self.org_name = params.get('org', 'ministryofjustice')
+
+    # Create a session with a private key
+    self.session = None
     self.auth()
     if self.session:
       try:
@@ -65,17 +62,19 @@ class GithubSession:
     # if the authentication is with a private key, get a fresh token
     if self.private_key:
       try:
-        self.token = Auth.Token(self.rest_token)
+        self.rest_token = self.get_access_token()
       except GithubException as g:
         log_critical(f'Unable to authenticate to the github API - {g}')
         sys.exit(1)
     # Then initiate a session with the token
+    self.token = Auth.Token(self.rest_token)
     try:
       self.session = Github(auth=self.token, pool_size=50)
     except GithubException as e:
-      log_critical(f'Unable to authenticate to the github API - {e}')
+      log_critical(f'Unable to create a session using the github API - {e}')
       sys.exit(1)
-      # Refresh the org object
+
+    # Refresh the org object
     try:
       self.org = self.session.get_organization(self.org_name)
     except GithubException as e:
