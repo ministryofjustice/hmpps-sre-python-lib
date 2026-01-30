@@ -1,7 +1,7 @@
 import requests
 import json
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from hmpps.services.job_log_handling import (
   log_debug,
@@ -10,6 +10,7 @@ from hmpps.services.job_log_handling import (
   log_critical,
   log_warning,
   job,
+  Jobs,
 )
 from datetime import datetime
 
@@ -29,7 +30,11 @@ def _basename(url: str) -> str:
 
 
 class ServiceCatalogue:
-  def __init__(self, params):
+  def __init__(
+    self,
+    params: Dict[str, Any],
+    session: Optional[requests.Session] = None,
+  ):
     # default variables
     page_size = 10
     pagination_page_size = f'&pagination[pageSize]={page_size}'
@@ -39,6 +44,9 @@ class ServiceCatalogue:
 
     self.url = params['url']
     self.key = params['key']
+    self.timeout = params.get('timeout', 10)
+    # Allow injection of a requests session for testability
+    self.session = session or requests.Session()
 
     # limit results for testing/dev
     # See strapi filter syntax
@@ -84,11 +92,13 @@ class ServiceCatalogue:
   Test connection to the Service Catalogue
   """
 
-  def test_connection(self):
+  def test_connection(self) -> bool:
     # Test connection to Service Catalogue
     try:
       log_info(f'Testing connection to the Service Catalogue - {self.url}')
-      r = requests.head(f'{self.url}', headers=self.api_headers, timeout=10)
+      r = self.session.head(
+        f'{self.url}', headers=self.api_headers, timeout=self.timeout
+      )
       log_info(
         f'Successfully connected to the Service Catalogue - {self.url}. {r.status_code}'
       )
@@ -113,7 +123,7 @@ class ServiceCatalogue:
 
     while attempt < max_retries:
       try:
-        resp = requests.get(url, headers=self.api_headers, timeout=timeout)
+        resp = self.session.get(url, headers=self.api_headers, timeout=timeout)
         resp.raise_for_status()  # Raises for non-2xx
         return resp.json()
       except (requests.RequestException, ValueError) as e:
@@ -197,22 +207,18 @@ class ServiceCatalogue:
       log_error(f'Failed to get data from Service Catalogue: {e}')
     return json_data
 
-  """
-  Get all multipage results from Service Catalogue
-  """
-
-  def get_all_records(self, table):
+  def get_all_records(self, table: str) -> List[Any]:
+    """Get all multipage results from Service Catalogue."""
     log_info(
       f'Getting all records from table {table} in Service Catalogue using URL: '
       f'{self.url}/v1/{table}'
     )
     return self.get_with_retry(table)
 
-  """
-  Get a single record by filter parameter from the Service Catalogue
-  """
-
-  def get_record(self, table, label, parameter):
+  def get_record(
+    self, table: str, label: str, parameter: str
+  ) -> Optional[Dict[str, Any]]:
+    """Get a single record by filter parameter from the Service Catalogue."""
     if '?' in table:  # add an extra parameter if there are already parameters
       filter = f'&filters[{label}][$eq]={parameter.replace("&", "&amp;")}'
     else:
@@ -220,19 +226,18 @@ class ServiceCatalogue:
     if json_data := self.get_with_retry(f'{table}{filter}'):
       return json_data[0]
     else:
-      return {}
+      return None
 
-  """
-  Update a record in the Service Catalogue with passed-in JSON data
-  """
-
-  def get_filtered_records(self, match_table, match_field, match_string):
+  def get_filtered_records(
+    self, match_table: str, match_field: str, match_string: str
+  ) -> Optional[List[Dict[str, Any]]]:
+    """Get filtered records from the Service Catalogue."""
     try:
-      r = requests.get(
+      r = self.session.get(
         f'{self.url}/v1/{match_table}?filters[{match_field}][$eq]='
         f'{match_string.replace("&", "&amp;")}',
         headers=self.api_headers,
-        timeout=10,
+        timeout=self.timeout,
       )
       if r.status_code == 200 and r.json()['data']:
         sc_id = r.json()['data'][0]['id']
@@ -253,24 +258,22 @@ class ServiceCatalogue:
       )
       return None
 
-  """
-  Get a single record by id from the Service Catalogue
-  """
-
-  def get_record_by_id(self, table, id):
+  def get_record_by_id(self, table: str, id: str) -> Optional[Dict[str, Any]]:
+    """Get a single record by id from the Service Catalogue."""
     if json_data := self.get_single_record_with_retry(f'{table}/{id}'):
       return json_data
     else:
-      return {}
+      return None
 
-  def update(self, table, element_id, data):
+  def update(self, table: str, element_id: str, data: Dict[str, Any]) -> bool:
+    """Update a record in the Service Catalogue with passed-in JSON data."""
     try:
       log_debug(f'data to be uploaded: {json.dumps(data, indent=2)}')
-      x = requests.put(
+      x = self.session.put(
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
         json={'data': data},
-        timeout=10,
+        timeout=self.timeout,
       )
       if x.status_code == 200:
         log_info(
@@ -292,14 +295,15 @@ class ServiceCatalogue:
       return False
     return True
 
-  def add(self, table, data):
+  def add(self, table: str, data: Dict[str, Any]) -> Dict[str, Any] | bool:
+    """Add a new record to the Service Catalogue."""
     try:
       log_debug(f'Data to be added: {json.dumps(data, indent=2)}')
-      x = requests.post(
+      x = self.session.post(
         f'{self.url}/v1/{table}',
         headers=self.api_headers,
         json={'data': data},
-        timeout=10,
+        timeout=self.timeout,
       )
       if x.status_code == 201:
         log_info(
@@ -320,13 +324,14 @@ class ServiceCatalogue:
       return False
     return x.json()
 
-  def delete(self, table, element_id):
+  def delete(self, table: str, element_id: str) -> bool:
+    """Delete a record from the Service Catalogue."""
     try:
       log_debug(f'Deleting record {element_id} from {table.split("/")[-1]}')
-      x = requests.delete(
+      x = self.session.delete(
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
-        timeout=10,
+        timeout=self.timeout,
       )
       if 200 <= x.status_code < 300:
         log_info(
@@ -347,15 +352,16 @@ class ServiceCatalogue:
       return False
     return True
 
-  def unpublish(self, table, element_id):
+  def unpublish(self, table: str, element_id: str) -> bool:
+    """Unpublish a record in the Service Catalogue."""
     try:
       # log_debug(f'data to be unpublished: {json.dumps(data, indent=2)}')
       data = {'publishedAt': None}
-      x = requests.put(
+      x = self.session.put(
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
         json={'data': data},
-        timeout=10,
+        timeout=self.timeout,
       )
       if x.status_code == 200:
         log_info(
@@ -376,8 +382,13 @@ class ServiceCatalogue:
       return False
     return True
 
-  # eg get_id('github-teams', 'team_name', 'example')
-  def get_id(self, match_table, match_field, match_string):
+  def get_id(
+    self, match_table: str, match_field: str, match_string: str
+  ) -> Optional[str]:
+    """Get a documentId by filter parameter.
+
+    Example: get_id('github-teams', 'team_name', 'example')
+    """
     uri = (
       f'{match_table}?filters[{match_field}][$eq]={match_string.replace("&", "&amp;")}'
     )
@@ -394,8 +405,10 @@ class ServiceCatalogue:
           f'{match_field}={match_string} in {match_table}'
         )
         return None
+    return None
 
-  def get_component_env_id(self, component, env):
+  def get_component_env_id(self, component: Dict[str, Any], env: str) -> Optional[str]:
+    """Get environment documentId from a component's envs array."""
     env_id = None
     for env_obj in component.get('envs', []):
       if env_obj.get('name') == env:
@@ -412,28 +425,40 @@ class ServiceCatalogue:
       )
     return env_id
 
-  def find_all_teams_ref_in_sc(self):
+  def find_all_teams_ref_in_sc(self) -> set[str]:
+    """Find all GitHub team references across all components in Service Catalogue."""
     components = self.get_all_records(self.components_get)
-    combined_teams = set()
+    combined_teams: set[str] = set()
     for component in components:
       combined_teams.update(component.get('github_project_teams_write', []) or [])
       combined_teams.update(component.get('github_project_teams_admin', []) or [])
       combined_teams.update(component.get('github_project_teams_maintain', []) or [])
     return combined_teams
 
-  def update_scheduled_job(self, status):
-    sc_scheduled_jobs_data = self.get_record('scheduled-jobs', 'name', job.name)
-    job_data = {
+  def update_scheduled_job(
+    self, status: str, job_context: Optional[Jobs] = None
+  ) -> bool:
+    """Update a scheduled job record in the Service Catalogue."""
+    job_ctx = job_context or job  # Fallback to global for backward compat
+    job_name = job_ctx.name if job_ctx.name else 'unknown'
+    sc_scheduled_jobs_data = self.get_record('scheduled-jobs', 'name', job_name)
+    job_data: Dict[str, Any] = {
       'last_scheduled_run': datetime.now().isoformat(),
       'result': status,
-      'error_details': job.error_messages,
+      'error_details': job_ctx.error_messages,
     }
     if status == 'Succeeded':
       job_data['last_successful_run'] = datetime.now().isoformat()
     try:
+      if not sc_scheduled_jobs_data:
+        log_error(f'Job {job_name} not found in Service Catalogue')
+        return False
       job_id = sc_scheduled_jobs_data.get('documentId')
+      if not job_id:
+        log_error(f'Job {job_name} has no documentId')
+        return False
       self.update(self.scheduled_jobs, job_id, job_data)
     except Exception as e:
-      log_error(f'Job {job.name} not found in Service Catalogue - {e}')
+      log_error(f'Job {job_name} not found in Service Catalogue - {e}')
       return False
     return True

@@ -27,4 +27,4 @@ packages = ["src/hmpps"]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
-pypath = "src"
+pythonpath = "src"
