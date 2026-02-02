@@ -662,7 +662,7 @@ class TestGetRecord:
     with patch.object(
       service_catalogue, 'get_with_retry', return_value=mock_data
     ) as mock_get:
-      result = service_catalogue.get_record(table, label, parameter)
+      service_catalogue.get_record(table, label, parameter)
 
     called_uri = mock_get.call_args[0][0]
     assert expected_filter_start in called_uri
