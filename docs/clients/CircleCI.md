@@ -8,15 +8,7 @@ Initiates a CircleCI session.
 ```
 from hmpps import CircleCI
 
-cc_params = {
-  'url': os.getenv(
-    'CIRCLECI_API_ENDPOINT',
-    'https://circleci.com/api/v1.1/project/gh/ministryofjustice/',
-  ),
-  'token': os.getenv('CIRCLECI_TOKEN'),
-}
-
-cc=CircleCI(cc_params)
+cc=CircleCI(url='https://circleci.com/api/v1.1/project/gh/ministryofjustice/',token=os.getenv('CIRCLECI_TOKEN'))
 ```
 
 ### Functions

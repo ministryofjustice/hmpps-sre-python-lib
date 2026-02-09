@@ -38,9 +38,9 @@ class ServiceCatalogue:
     timeout: int = 10,
     session: Optional[requests.Session] = None,
   ):
-    self.url = url or os.getenv('SERVICE_CATALOGUE_API_ENDPOINT')
-    self.key = key or os.getenv('SERVICE_CATALOGUE_API_KEY')
-    self.filter = filter or os.getenv('SC_FILTER')
+    self.url = url or os.getenv('SERVICE_CATALOGUE_API_ENDPOINT', '')
+    self.key = key or os.getenv('SERVICE_CATALOGUE_API_KEY', '')
+    self.filter = filter or os.getenv('SC_FILTER', '')
     self.timeout = timeout
 
     # default variables

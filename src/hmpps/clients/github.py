@@ -32,17 +32,18 @@ class GithubSession:
     self.org_name = org
 
     # Define defaults
-    self.app_id = app_id or os.getenv('GITHUB_APP_ID')
+    self.app_id = app_id or os.getenv('GITHUB_APP_ID', '')
     self.app_installation_id = app_installation_id or os.getenv(
-      'GITHUB_APP_INSTALLATION_ID'
+      'GITHUB_APP_INSTALLATION_ID', ''
     )
-    self.app_private_key = app_private_key or os.getenv('GITHUB_APP_PRIVATE_KEY')
-    self.access_token = access_token or os.getenv('GITHUB_ACCESS_TOKEN')
-    self.bootstrap_repo = (
+    self.app_private_key = app_private_key or os.getenv('GITHUB_APP_PRIVATE_KEY', '')
+    self.access_token = access_token or os.getenv('GITHUB_ACCESS_TOKEN', '')
+    self.bootstrap_repo_name = (
       bootstrap_repo
-      or os.environ.get('GITHUB_BOOTSTRAP_REPO')
+      or os.environ.get('GITHUB_BOOTSTRAP_REPO', '')
       or 'hmpps-project-bootstrap'
     )
+
     # Don't progress if there's no private key or access token
     if not self.app_private_key and not self.access_token:
       log_error(
@@ -59,16 +60,18 @@ class GithubSession:
 
     # Create a session with a private key
     self.auth()
-    try:
-      rate_limit = self.session.get_rate_limit()
-      self.core_rate_limit = rate_limit.resources.core
-      log_info(f'Github API - rate limit: {rate_limit}')
-    except Exception as e:
-      log_error(f'Unable to get github rate limit - {e}')
+
+    if self.session:
+      try:
+        rate_limit = self.session.get_rate_limit()
+        self.core_rate_limit = rate_limit.resources.core
+        log_info(f'Github API - rate limit: {rate_limit}')
+      except Exception as e:
+        log_error(f'Unable to get github rate limit - {e}')
 
     # Bootstrap repo parameter for bootstrapping
-    if bootstrap_repo:
-      self.bootstrap_repo = self.org.get_repo(f'{bootstrap_repo}')
+    if self.bootstrap_repo_name:
+      self.bootstrap_repo = self.org.get_repo(f'{self.bootstrap_repo_name}')
       log_debug(
         f'Initialised Github project with bootstrap repo: {self.bootstrap_repo.name}'
       )
@@ -91,6 +94,10 @@ class GithubSession:
       self.session = Github(auth=self.token, pool_size=50)
     except GithubException as e:
       log_critical(f'Unable to create a session using the github API - {e}')
+      sys.exit(1)
+
+    if not self.session:
+      log_critical('Unable to create a session using the github API')
       sys.exit(1)
 
     # Refresh the org object
@@ -120,6 +127,8 @@ class GithubSession:
   def test_connection(self):
     # Test auth and connection to github
     try:
+      if not self.session:
+        return False
       rate_limit = self.session.get_rate_limit()
       self.core_rate_limit = rate_limit.resources.core
       log_info(f'Github API: {rate_limit}')
@@ -295,6 +304,10 @@ class GithubSession:
     return summary
 
   def create_update_pr(self, request):
+    if not self.bootstrap_repo:
+      log_error('Bootstrap repo has not been defined')
+      return request
+
     if request.get('request_type') == 'Archive':
       log_info(f'Request type Archive for repository {request.get("github_repo")}')
       branch_name = f'REQ_ARCHIVE_{request["id"]}_{request.get("github_repo")}'
@@ -419,20 +432,23 @@ class GithubSession:
     return request
 
   def delete_old_workflows(self):
+    if not self.bootstrap_repo:
+      return None
     try:
-      if bootstrap_workflow := [
-        workflow
-        for workflow in self.bootstrap_repo.get_workflows()
-        if workflow.name == 'Bootstrap - poll for repo requests'
-      ]:
-        workflow_runs = bootstrap_workflow[0].get_runs()
-        run_qty = workflow_runs.totalCount
-        if run_qty > 12:
-          log_debug(
-            f'Workflow {bootstrap_workflow[0].name} has {run_qty} runs - cropping to 12'
-          )
-          for run in workflow_runs[12:]:
-            run.delete()
+      if workflows := self.bootstrap_repo.get_workflows():
+        if bootstrap_workflow := [
+          workflow
+          for workflow in workflows
+          if workflow.name == 'Bootstrap - poll for repo requests'
+        ]:
+          workflow_runs = bootstrap_workflow[0].get_runs()
+          run_qty = workflow_runs.totalCount
+          if run_qty > 12:
+            log_debug(
+              f'Workflow {bootstrap_workflow[0].name} has {run_qty} runs - cropping to 12'
+            )
+            for run in workflow_runs[12:]:
+              run.delete()
 
     except GithubException as e:
       log_warning(

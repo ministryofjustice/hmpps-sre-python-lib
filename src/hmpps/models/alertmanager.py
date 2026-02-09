@@ -1,12 +1,20 @@
 import requests
 import yaml
 import json
+import os
 from hmpps.services.job_log_handling import log_debug, log_error, log_info
 
 
 class AlertmanagerData:
-  def __init__(self, am_params):
-    self.url = am_params['url']
+  def __init__(self, url: str = ''):
+    self.url = (
+      url
+      or os.getenv('ALERTMANAGER_ENDPOINT')
+      or (
+        'http://monitoring-alerts-service.cloud-platform-monitoring-alerts:8080/'
+        'alertmanager/status'
+      )
+    )
     self.get_alertmanager_data()
 
   def get_alertmanager_data(self):
