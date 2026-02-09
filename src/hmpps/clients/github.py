@@ -4,6 +4,7 @@ import json
 import yaml
 import jwt
 import sys
+import os
 from time import sleep
 from github import Auth, Github
 from github import GithubException
@@ -19,24 +20,42 @@ from hmpps.services.job_log_handling import (
 
 
 class GithubSession:
-  def __init__(self, params):
+  def __init__(
+    self,
+    org: str = 'ministryofjustice',
+    app_id: str = '',
+    app_installation_id: str = '',
+    app_private_key: str = '',
+    access_token: str = '',
+    bootstrap_repo: str = '',
+  ):
+    self.org_name = org
+
+    # Define defaults
+    self.app_id = app_id or os.getenv('GITHUB_APP_ID')
+    self.app_installation_id = app_installation_id or os.getenv(
+      'GITHUB_APP_INSTALLATION_ID'
+    )
+    self.app_private_key = app_private_key or os.getenv('GITHUB_APP_PRIVATE_KEY')
+    self.access_token = access_token or os.getenv('GITHUB_ACCESS_TOKEN')
+    self.bootstrap_repo = (
+      bootstrap_repo
+      or os.environ.get('GITHUB_BOOTSTRAP_REPO')
+      or 'hmpps-project-bootstrap'
+    )
     # Don't progress if there's no private key or access token
-    if not params.get('app_private_key') and not params.get('github_access_token'):
+    if not self.app_private_key and not self.access_token:
       log_error(
         'app_private_key or github_access_token are needed to initiate a Github Session'
       )
       sys.exit(1)
 
     # set the parameters depending on authentication type
-    if params.get('app_private_key'):
-      self.private_key = b64decode(params.get('app_private_key')).decode('ascii')
-      self.app_id = params.get('app_id')
-      self.app_installation_id = params['app_installation_id']
+    if self.app_private_key:
+      self.private_key = b64decode(app_private_key).decode('ascii')
     else:
       self.private_key = self.app_id = self.app_installation_id = ''
-      self.rest_token = params.get('github_access_token')
-
-    self.org_name = params.get('org', 'ministryofjustice')
+      self.rest_token = self.access_token
 
     # Create a session with a private key
     self.auth()
@@ -48,8 +67,8 @@ class GithubSession:
       log_error(f'Unable to get github rate limit - {e}')
 
     # Bootstrap repo parameter for bootstrapping
-    if github_bootstrap_repo := params.get('github_bootstrap_repo'):
-      self.bootstrap_repo = self.org.get_repo(f'{github_bootstrap_repo}')
+    if bootstrap_repo:
+      self.bootstrap_repo = self.org.get_repo(f'{bootstrap_repo}')
       log_debug(
         f'Initialised Github project with bootstrap repo: {self.bootstrap_repo.name}'
       )
