@@ -53,8 +53,10 @@ class GithubSession:
 
     # set the parameters depending on authentication type
     if self.app_private_key:
+      log_debug('Using private key provided to authenticate')
       self.private_key = b64decode(app_private_key).decode('ascii')
     else:
+      log_debug('Using access token provided to authenticate')
       self.private_key = self.app_id = self.app_installation_id = ''
       self.rest_token = self.access_token
 
@@ -83,14 +85,18 @@ class GithubSession:
     log_debug('Authenticating to Github')
     # if the authentication is with a private key, get a fresh token
     if self.private_key:
+      log_debug('Getting a REST access token using the private key')
       try:
         self.rest_token = self.get_access_token()
       except GithubException as g:
         log_critical(f'Unable to authenticate to the github API - {g}')
         sys.exit(1)
     # Then initiate a session with the token
+    log_debug('Getting a token using the REST token')
     self.token = Auth.Token(self.rest_token)
     try:
+      # Then initiate a session with the token
+      log_debug('Starting a session with the token')
       self.session = Github(auth=self.token, pool_size=50)
     except GithubException as e:
       log_critical(f'Unable to create a session using the github API - {e}')
