@@ -449,7 +449,8 @@ class GithubSession:
           run_qty = workflow_runs.totalCount
           if run_qty > 12:
             log_debug(
-              f'Workflow {bootstrap_workflow[0].name} has {run_qty} runs - cropping to 12'
+              f'Workflow {bootstrap_workflow[0].name} has {run_qty} runs -'
+              ' cropping to 12'
             )
             for run in workflow_runs[12:]:
               run.delete()
