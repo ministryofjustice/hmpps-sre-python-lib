@@ -17,4 +17,4 @@
 0.1.14  - Fix for one more malformed service catalogue query (product_filter)
 0.1.15  - Include a rest token when authenticating to Github using a private key
 
-0.2.0   - Refactored ServiceCatalogue and GithubSession classes to authenticate more consistently
+1.0.0   - Refactored ServiceCatalogue and GithubSession classes to authenticate more consistently

@@ -74,9 +74,7 @@ class GithubSession:
     # Bootstrap repo parameter for bootstrapping
     if self.bootstrap_repo_name:
       self.bootstrap_repo = self.org.get_repo(f'{self.bootstrap_repo_name}')
-      log_debug(
-        f'Initialised Github project with bootstrap repo: {self.bootstrap_repo.name}'
-      )
+      log_debug(f'Current bootstrap repo: {self.bootstrap_repo.name}')
     else:
       self.bootstrap_repo = None
 
