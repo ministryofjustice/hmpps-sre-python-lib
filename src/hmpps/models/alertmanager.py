@@ -53,7 +53,7 @@ class AlertmanagerData:
   def find_channel_by_severity_label(self, alert_severity_label):
     # Find the receiver name for the given severity
     receiver_name = ''
-    if self.isDataAvailable():
+    if self.isDataAvailable() and self.json_config_data:
       log_debug(f'Looking for a route for {alert_severity_label}')
       for route in self.json_config_data.get('route', {}).get('routes', []):
         if route['match'].get('severity') == alert_severity_label:
