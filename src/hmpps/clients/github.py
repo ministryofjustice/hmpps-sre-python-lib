@@ -55,7 +55,6 @@ class GithubSession:
     if self.app_private_key:
       log_debug('Using private key provided to authenticate')
       self.private_key = b64decode(self.app_private_key).decode('ascii')
-      log_debug(f'self.private_key is: {self.private_key}')
     else:
       log_debug('Using access token provided to authenticate')
       self.private_key = self.app_id = self.app_installation_id = ''
