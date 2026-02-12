@@ -417,7 +417,12 @@ class ServiceCatalogue:
     return env_id
 
   def find_all_teams_ref_in_sc(self):
-    components = self.get_all_records(self.components_get)
+    # Only compile list of teams for non-archived components
+    components = self.get_all_records(
+      f'{self.components}?populate[latest_commit]=true&populate'
+      f'[product]=true&populate[envs]=true&filters[archived][$eq]=false'
+    )
+
     combined_teams = set()
     for component in components:
       combined_teams.update(component.get('github_project_teams_write', []) or [])
