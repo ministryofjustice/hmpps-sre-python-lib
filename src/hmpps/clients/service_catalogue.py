@@ -240,6 +240,7 @@ class ServiceCatalogue:
         f'{self.url}/v1/{match_table}?filters[{match_field}][$eq]='
         f'{match_string.replace("&", "&amp;")}',
         headers=self.api_headers,
+        timeout=self.timeout,
       )
       if r.status_code == 200 and r.json()['data']:
         sc_id = r.json()['data'][0]['id']
@@ -275,6 +276,7 @@ class ServiceCatalogue:
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
         json={'data': data},
+        timeout=self.timeout,
       )
       if x.status_code == 200:
         log_info(
@@ -304,6 +306,7 @@ class ServiceCatalogue:
         f'{self.url}/v1/{table}',
         headers=self.api_headers,
         json={'data': data},
+        timeout=self.timeout,
       )
       if x.status_code == 201:
         log_info(
@@ -332,6 +335,7 @@ class ServiceCatalogue:
       x = self.session.delete(
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
+        timeout=self.timeout,
       )
       if 200 <= x.status_code < 300:
         log_info(
@@ -362,6 +366,7 @@ class ServiceCatalogue:
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
         json={'data': data},
+        timeout=self.timeout,
       )
       if x.status_code == 200:
         log_info(

@@ -31,43 +31,25 @@ def mock_session():
 
 
 @pytest.fixture
-def sc_params():
-  """Standard ServiceCatalogue params for testing."""
-  return {
-    'url': 'https://test-sc.example.com',
-    'key': 'test-api-key-12345',
-    'filter': '',
-  }
+def sc_url():
+  """Standard ServiceCatalogue URL for testing."""
+  return 'https://test-sc.example.com'
 
 
 @pytest.fixture
-def sc_params_with_filter():
-  """ServiceCatalogue params with a filter."""
-  return {
-    'url': 'https://test-sc.example.com',
-    'key': 'test-api-key-12345',
-    'filter': '&filters[name][$contains]=test',
-  }
+def sc_key():
+  """Standard ServiceCatalogue API key for testing."""
+  return 'test-api-key-12345'
 
 
 @pytest.fixture
-def sc_params_with_timeout():
-  """ServiceCatalogue params with custom timeout."""
-  return {
-    'url': 'https://test-sc.example.com',
-    'key': 'test-api-key-12345',
-    'timeout': 30,
-  }
-
-
-@pytest.fixture
-def service_catalogue(sc_params, mock_session):
+def service_catalogue(sc_url, sc_key, mock_session):
   """Create a ServiceCatalogue instance with mocked session."""
   # Mock the head call for test_connection in __init__
   mock_response = Mock()
   mock_response.status_code = 200
   mock_session.head.return_value = mock_response
-  return ServiceCatalogue(sc_params, session=mock_session)
+  return ServiceCatalogue(url=sc_url, key=sc_key, session=mock_session)
 
 
 @pytest.fixture
@@ -262,51 +244,56 @@ class TestBasename:
 class TestServiceCatalogueInit:
   """Tests for ServiceCatalogue.__init__."""
 
-  def test_init_with_valid_params(self, sc_params, mock_session):
+  def test_init_with_valid_params(self, sc_url, sc_key, mock_session):
     """Test successful initialization with valid parameters."""
     mock_response = Mock()
     mock_response.status_code = 200
     mock_session.head.return_value = mock_response
 
-    sc = ServiceCatalogue(sc_params, session=mock_session)
+    sc = ServiceCatalogue(url=sc_url, key=sc_key, session=mock_session)
 
-    assert sc.url == sc_params['url']
-    assert sc.key == sc_params['key']
+    assert sc.url == sc_url
+    assert sc.key == sc_key
     assert sc.filter == ''
     assert sc.timeout == 10  # default
     assert sc.connection_ok is True
-    assert 'Bearer test-api-key-12345' in sc.api_headers['Authorization']
+    assert f'Bearer {sc_key}' in sc.api_headers['Authorization']
 
-  def test_init_with_filter(self, sc_params_with_filter, mock_session):
+  def test_init_with_filter(self, sc_url, sc_key, mock_session):
     """Test initialization with filter parameter."""
     mock_response = Mock()
     mock_response.status_code = 200
     mock_session.head.return_value = mock_response
 
-    sc = ServiceCatalogue(sc_params_with_filter, session=mock_session)
+    sc = ServiceCatalogue(
+      url=sc_url,
+      key=sc_key,
+      filter='&filters[name][$contains]=test',
+      session=mock_session,
+    )
 
     assert sc.filter == '&filters[name][$contains]=test'
     assert sc.filter in sc.components_get
 
-  def test_init_with_custom_timeout(self, sc_params_with_timeout, mock_session):
+  def test_init_with_custom_timeout(self, sc_url, sc_key, mock_session):
     """Test initialization with custom timeout."""
     mock_response = Mock()
     mock_response.status_code = 200
     mock_session.head.return_value = mock_response
 
-    sc = ServiceCatalogue(sc_params_with_timeout, session=mock_session)
+    sc = ServiceCatalogue(url=sc_url, key=sc_key, timeout=30, session=mock_session)
 
     assert sc.timeout == 30
 
-  def test_init_connection_failure(self, sc_params, mock_session):
+  def test_init_connection_failure(self, sc_url, sc_key, mock_session):
     """Test initialization when connection fails."""
     mock_session.head.side_effect = ConnectionError('Connection refused')
 
-    sc = ServiceCatalogue(sc_params, session=mock_session)
+    sc = ServiceCatalogue(url=sc_url, key=sc_key, session=mock_session)
 
     assert sc.connection_ok is False
 
-  def test_init_creates_default_session_if_not_provided(self, sc_params):
+  def test_init_creates_default_session_if_not_provided(self, sc_url, sc_key):
     """Test that a default session is created if none provided."""
     with patch('requests.Session') as mock_session_class:
       mock_instance = Mock()
@@ -315,7 +302,7 @@ class TestServiceCatalogueInit:
       mock_instance.head.return_value = mock_response
       mock_session_class.return_value = mock_instance
 
-      sc = ServiceCatalogue(sc_params)
+      sc = ServiceCatalogue(url=sc_url, key=sc_key)
 
       mock_session_class.assert_called_once()
       assert sc.session == mock_instance
@@ -356,13 +343,13 @@ class TestTestConnection:
 
     assert result is False
 
-  def test_connection_uses_correct_timeout(self, sc_params_with_timeout, mock_session):
+  def test_connection_uses_correct_timeout(self, sc_url, sc_key, mock_session):
     """Test that connection uses configured timeout."""
     mock_response = Mock()
     mock_response.status_code = 200
     mock_session.head.return_value = mock_response
 
-    sc = ServiceCatalogue(sc_params_with_timeout, session=mock_session)
+    sc = ServiceCatalogue(url=sc_url, key=sc_key, timeout=30, session=mock_session)
     sc.test_connection()
 
     # Verify timeout was passed to head call
@@ -387,7 +374,7 @@ class TestRequestJsonWithRetry:
     mock_session.get.return_value = mock_response
 
     result = service_catalogue._request_json_with_retry(
-      'https://api.example.com/test', max_retries=3, timeout=10
+      'https://api.example.com/test', max_retries=3
     )
 
     assert result == {'data': 'test'}
@@ -410,7 +397,7 @@ class TestRequestJsonWithRetry:
 
     with patch('time.sleep'):  # Skip actual sleep
       result = service_catalogue._request_json_with_retry(
-        'https://api.example.com/test', max_retries=3, timeout=10
+        'https://api.example.com/test', max_retries=3
       )
 
     assert result == {'data': 'success'}
@@ -427,7 +414,7 @@ class TestRequestJsonWithRetry:
     with patch('time.sleep'):
       with pytest.raises(RuntimeError) as exc_info:
         service_catalogue._request_json_with_retry(
-          'https://api.example.com/test', max_retries=3, timeout=10
+          'https://api.example.com/test', max_retries=3
         )
 
     assert 'Exceeded retries' in str(exc_info.value)
@@ -446,7 +433,7 @@ class TestRequestJsonWithRetry:
     with patch('time.sleep'):
       with pytest.raises(RuntimeError):
         service_catalogue._request_json_with_retry(
-          'https://api.example.com/test', max_retries=2, timeout=10
+          'https://api.example.com/test', max_retries=2
         )
 
     assert mock_session.get.call_count == 2
@@ -462,7 +449,7 @@ class TestRequestJsonWithRetry:
     with patch('time.sleep'):
       with pytest.raises(RuntimeError):
         service_catalogue._request_json_with_retry(
-          'https://api.example.com/test', max_retries=2, timeout=10
+          'https://api.example.com/test', max_retries=2
         )
 
     assert mock_session.get.call_count == 2
@@ -476,7 +463,7 @@ class TestRequestJsonWithRetry:
     with patch('time.sleep') as mock_sleep:
       with pytest.raises(RuntimeError):
         service_catalogue._request_json_with_retry(
-          'https://api.example.com/test', max_retries=4, timeout=10
+          'https://api.example.com/test', max_retries=4
         )
 
     # Check backoff pattern: 0.5s, 1.0s, 2.0s
@@ -747,6 +734,18 @@ class TestGetFilteredRecords:
 
     assert result is None
 
+  def test_uses_configured_timeout(self, service_catalogue, mock_session):
+    """Test that get_filtered_records uses configured timeout."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {'data': [{'id': 1, 'name': 'test'}]}
+    mock_session.get.return_value = mock_response
+
+    service_catalogue.get_filtered_records('components', 'name', 'test')
+
+    call_kwargs = mock_session.get.call_args[1]
+    assert call_kwargs['timeout'] == service_catalogue.timeout
+
 
 # =============================================================================
 # Tests for get_record_by_id
@@ -880,6 +879,18 @@ class TestAdd:
 
     assert result is False
 
+  def test_uses_configured_timeout(self, service_catalogue, mock_session):
+    """Test that add uses configured timeout."""
+    mock_response = Mock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {'data': {'id': 1, 'name': 'new-record'}}
+    mock_session.post.return_value = mock_response
+
+    service_catalogue.add('components', {'name': 'new-record'})
+
+    call_kwargs = mock_session.post.call_args[1]
+    assert call_kwargs['timeout'] == service_catalogue.timeout
+
 
 # =============================================================================
 # Tests for delete
@@ -921,6 +932,17 @@ class TestDelete:
 
     assert result is False
 
+  def test_uses_configured_timeout(self, service_catalogue, mock_session):
+    """Test that delete uses configured timeout."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_session.delete.return_value = mock_response
+
+    service_catalogue.delete('components', 'doc-123')
+
+    call_kwargs = mock_session.delete.call_args[1]
+    assert call_kwargs['timeout'] == service_catalogue.timeout
+
 
 # =============================================================================
 # Tests for unpublish
@@ -960,6 +982,17 @@ class TestUnpublish:
     result = service_catalogue.unpublish('components', 'doc-123')
 
     assert result is False
+
+  def test_uses_configured_timeout(self, service_catalogue, mock_session):
+    """Test that unpublish uses configured timeout."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_session.put.return_value = mock_response
+
+    service_catalogue.unpublish('components', 'doc-123')
+
+    call_kwargs = mock_session.put.call_args[1]
+    assert call_kwargs['timeout'] == service_catalogue.timeout
 
 
 # =============================================================================
