@@ -28,3 +28,8 @@ markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
 pythonpath = "src"
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.0.0",
+]

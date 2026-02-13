@@ -349,8 +349,16 @@ The following are areas where the current tests could be extended to catch more 
 
 ```bash
 # Run just the ServiceCatalogue tests
-pytest tests/clients/test_service_catalogue.py -v
+uv run pytest tests/clients/test_service_catalogue.py -v
+```
 
-# Run with coverage
-pytest tests/clients/test_service_catalogue.py --cov=src/hmpps/clients/service_catalogue --cov-report=term-missing
+### Coverage (optional)
+
+Coverage analysis shows which lines of source code are exercised by the tests and which are not. This requires the `pytest-cov` package (already in `dev` dependencies):
+
+```bash
+# Run tests with a coverage report — uncovered line numbers are listed in the "Missing" column
+# Note: use the dotted module path without the "src." prefix, because pyproject.toml
+# sets pythonpath = "src", so Python sees the module as hmpps.clients.service_catalogue
+uv run pytest tests/clients/test_service_catalogue.py --cov=hmpps.clients.service_catalogue --cov-report=term-missing
 ```
