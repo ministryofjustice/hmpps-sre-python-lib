@@ -36,9 +36,9 @@ sc.update_scheduled_job('STATUS')
 
 ## Functions
 
-*__init__(self, params)*
+*__init__(self, args)*
 Purpose: Build the client: base URL, API key, standard endpoints, headers, and test the connection.
-Inputs: params dict, expected keys: url, key, optional filter.
+Inputs: url, key, optional filter.
 Outputs: sets self.url, self.key, self.api_headers, prebuilt endpoint strings and self.connection_ok (result of test_connection()).
 
 *test_connection(self)*
@@ -46,9 +46,9 @@ Purpose: Validate connectivity to the Service Catalogue.
 Inputs: none (uses self.url/self.api_headers)
 Outputs: True on success, False on failure
 
-*get_with_retry(self, uri: str, max_retries: int = 3, timeout: int = 10) -> List[Any]*
+*get_with_retry(self, uri: str, max_retries: int = 3) -> List[Any]*
 Purpose: Aggregate all pages for a given uri by calling the Service Catalogue v1 endpoint; each page fetched with retry.
-Inputs: uri (relative path), optional max_retries, timeout
+Inputs: uri (relative path), optional max_retries
 Outputs: list of data items combined from all pages (data arrays)
 
 *get_all_records(self, table)*

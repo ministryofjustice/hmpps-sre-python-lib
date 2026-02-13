@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import os
 from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from hmpps.services.job_log_handling import (
@@ -32,9 +33,17 @@ def _basename(url: str) -> str:
 class ServiceCatalogue:
   def __init__(
     self,
-    params: Dict[str, Any],
+    url: str = '',
+    key: str = '',
+    filter: str = '',
+    timeout: int = 10,
     session: Optional[requests.Session] = None,
   ):
+    self.url = url or os.getenv('SERVICE_CATALOGUE_API_ENDPOINT', '')
+    self.key = key or os.getenv('SERVICE_CATALOGUE_API_KEY', '')
+    self.filter = filter or os.getenv('SC_FILTER', '')
+    self.timeout = timeout
+
     # default variables
     page_size = 10
     pagination_page_size = f'&pagination[pageSize]={page_size}'
@@ -42,17 +51,11 @@ class ServiceCatalogue:
     # sort_filter='&sort=updatedAt:asc'
     sort_filter = ''
 
-    self.url = params['url']
-    self.key = params['key']
-    self.timeout = params.get('timeout', 10)
-    # Allow injection of a requests session for testability
     self.session = session or requests.Session()
-
     # limit results for testing/dev
     # See strapi filter syntax
     #   https://docs.strapi.io/dev-docs/api/rest/filters-locale-publication
     # Example filter string = '&filters[name][$contains]=example'
-    self.filter = params.get('filter', '')
 
     self.product_filter = (
       '&fields[0]=slack_channel_id&fields[1]='
@@ -99,6 +102,9 @@ class ServiceCatalogue:
       r = self.session.head(
         f'{self.url}', headers=self.api_headers, timeout=self.timeout
       )
+      r = self.session.head(
+        f'{self.url}', headers=self.api_headers, timeout=self.timeout
+      )
       log_info(
         f'Successfully connected to the Service Catalogue - {self.url}. {r.status_code}'
       )
@@ -115,7 +121,6 @@ class ServiceCatalogue:
     self,
     url: str,
     max_retries: int,
-    timeout: int,
   ) -> Dict[str, Any]:
     """GET JSON with retry/backoff; raises after exhausting retries."""
     attempt = 0
@@ -123,7 +128,7 @@ class ServiceCatalogue:
 
     while attempt < max_retries:
       try:
-        resp = self.session.get(url, headers=self.api_headers, timeout=timeout)
+        resp = self.session.get(url, headers=self.api_headers, timeout=self.timeout)
         resp.raise_for_status()  # Raises for non-2xx
         return resp.json()
       except (requests.RequestException, ValueError) as e:
@@ -147,7 +152,6 @@ class ServiceCatalogue:
     self,
     uri: str,
     max_retries: int = 3,
-    timeout: int = 10,
   ) -> List[Any]:
     """
     Fetch all pages for the given `uri`, aggregating the `field` array.
@@ -159,7 +163,7 @@ class ServiceCatalogue:
 
     # First page
     try:
-      first = self._request_json_with_retry(base_url, max_retries, timeout)
+      first = self._request_json_with_retry(base_url, max_retries)
       pagination = first['meta']['pagination']
       log_debug(f'Got result page: {pagination["page"]} from Service Catalogue')
       page_count = int(pagination.get('pageCount', 1))
@@ -173,7 +177,7 @@ class ServiceCatalogue:
     for p in range(2, page_count + 1):
       page_url = _set_page(base_url, p)
       try:
-        page_json = self._request_json_with_retry(page_url, max_retries, timeout)
+        page_json = self._request_json_with_retry(page_url, max_retries)
         p_meta = page_json['meta']['pagination']
         log_debug(f'Got result page: {p_meta["page"]} from Service Catalogue')
         json_data.extend(page_json.get('data', []))
@@ -187,7 +191,6 @@ class ServiceCatalogue:
     self,
     uri: str,
     max_retries: int = 3,
-    timeout: int = 10,
   ) -> Dict[str, Any]:
     """
     Fetch all pages for the given `uri`, aggregating the `field` array.
@@ -197,7 +200,7 @@ class ServiceCatalogue:
     base_url = f'{self.url.rstrip("/")}/v1/{uri.lstrip("/")}'
     json_data: Dict[str, Any] = {}
     try:
-      response_data = self._request_json_with_retry(base_url, max_retries, timeout)
+      response_data = self._request_json_with_retry(base_url, max_retries)
       data_obj = response_data.get('data')
       if isinstance(data_obj, dict):
         json_data = data_obj
@@ -237,7 +240,6 @@ class ServiceCatalogue:
         f'{self.url}/v1/{match_table}?filters[{match_field}][$eq]='
         f'{match_string.replace("&", "&amp;")}',
         headers=self.api_headers,
-        timeout=self.timeout,
       )
       if r.status_code == 200 and r.json()['data']:
         sc_id = r.json()['data'][0]['id']
@@ -273,7 +275,6 @@ class ServiceCatalogue:
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
         json={'data': data},
-        timeout=self.timeout,
       )
       if x.status_code == 200:
         log_info(
@@ -303,7 +304,6 @@ class ServiceCatalogue:
         f'{self.url}/v1/{table}',
         headers=self.api_headers,
         json={'data': data},
-        timeout=self.timeout,
       )
       if x.status_code == 201:
         log_info(
@@ -328,10 +328,10 @@ class ServiceCatalogue:
     """Delete a record from the Service Catalogue."""
     try:
       log_debug(f'Deleting record {element_id} from {table.split("/")[-1]}')
+
       x = self.session.delete(
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
-        timeout=self.timeout,
       )
       if 200 <= x.status_code < 300:
         log_info(
@@ -357,11 +357,11 @@ class ServiceCatalogue:
     try:
       # log_debug(f'data to be unpublished: {json.dumps(data, indent=2)}')
       data = {'publishedAt': None}
+
       x = self.session.put(
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
         json={'data': data},
-        timeout=self.timeout,
       )
       if x.status_code == 200:
         log_info(

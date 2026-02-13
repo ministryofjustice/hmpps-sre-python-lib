@@ -1,5 +1,6 @@
 import requests
 import logging
+import os
 from hmpps.utils.utilities import update_dict
 from hmpps.services.job_log_handling import (
   log_debug,
@@ -10,10 +11,19 @@ from hmpps.services.job_log_handling import (
 
 
 class CircleCI:
-  def __init__(self, params):
-    self.url = params['url']
+  def __init__(
+    self,
+    url: str = '',
+    token: str = '',
+  ):
+    self.url = (
+      url
+      or os.getenv('CIRCLECI_API_ENDPOINT')
+      or 'https://circleci.com/api/v1.1/project/gh/ministryofjustice/'
+    )
+    self.token = token or os.getenv('CIRCLECI_TOKEN')
     self.headers = {
-      'Circle-Token': params['token'],
+      'Circle-Token': self.token,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     }

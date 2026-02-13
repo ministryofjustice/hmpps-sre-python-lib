@@ -1,4 +1,4 @@
-0.2.0 - first commit
+0.0.2 - first commit
 
 0.1.0   - first proper release
 0.1.1   - fix to Service Catalogue delete (expect 2xx response rather than expecting 200)
@@ -16,3 +16,5 @@
 0.1.13  - Patch for urllib3 to fix to >2.6.0 (vulnerability)
 0.1.14  - Fix for one more malformed service catalogue query (product_filter)
 0.1.15  - Include a rest token when authenticating to Github using a private key
+
+1.0.0   - Refactored ServiceCatalogue and GithubSession classes to authenticate more consistently

@@ -1,3 +1,4 @@
+import os
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from hmpps.services.job_log_handling import (
@@ -10,14 +11,17 @@ from hmpps.services.job_log_handling import (
 
 
 class Slack:
-  def __init__(self, slack_params):
-    self.notify_channel = slack_params.get('notify_channel', '')
-    self.alert_channel = slack_params.get('alert_channel', '')
+  def __init__(
+    self, notify_channel: str = '', alert_channel: str = '', token: str = ''
+  ):
+    self.notify_channel = notify_channel or os.getenv('SLACK_NOTIFY_CHANNEL', '')
+    self.alert_channel = alert_channel or os.getenv('SLACK_ALERT_CHANNEL', '')
+    self.token = token or os.getenv('SLACK_BOT_TOKEN', '')
 
     # Test auth and connection to Slack
-    log_debug(f'Connecting to Slack with token ending {slack_params["token"][-4:]}')
+    log_debug(f'Connecting to Slack with token ending {self.token[-4:]}')
     try:
-      self.slack_client = WebClient(token=slack_params['token'])
+      self.slack_client = WebClient(token=self.token)
     except Exception as e:
       log_critical(f'Unable to connect to Slack. {e}')
       return False
