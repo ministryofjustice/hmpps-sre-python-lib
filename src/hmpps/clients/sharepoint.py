@@ -30,7 +30,7 @@ class SharePoint:
     try:
       # Authenticate using client credentials (app-only)
       self.client = GraphClient(tenant=tenant_id).with_client_secret(
-        client_id, client_secret
+        client_id=self.client_id, client_secret=self.client_secret
       )
       log.info(
         f'Successfully authenticated to Microsoft Graph with tenant: {tenant_id}'
