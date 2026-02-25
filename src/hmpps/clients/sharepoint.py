@@ -7,6 +7,9 @@ log = logging.getLogger(__name__)
 
 
 class SharePoint:
+  def _redact(self, value):
+    return f'{value[:3]}...{value[-3:]}' if value and len(value) > 6 else value
+
   def __init__(self, site_url, client_id, client_secret, tenant_id, site_name):
     """Initialize SharePoint client with Azure AD credentials using Microsoft Graph."""
     self.site_url = site_url
@@ -14,6 +17,10 @@ class SharePoint:
     self.client_secret = client_secret
     self.tenant_id = tenant_id
     self.site_name = site_name
+
+    log.debug(f'client_id: {self._redact(client_id)}')
+    log.debug(f'client_secret: {self._redact(client_secret)}')
+    log.debug(f'tenant_id: {self._redact(tenant_id)}')
 
     try:
       # Authenticate using client credentials (app-only)
