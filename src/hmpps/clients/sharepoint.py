@@ -21,6 +21,7 @@ class SharePoint:
     self.client_secret = client_secret or os.getenv('SP_CLIENT_SECRET', '')
     self.tenant_id = tenant_id or os.getenv('AZ_TENANT_ID', '')
     self.site_name = site_name or os.getenv('SITE_NAME', '')
+    self.site_uri = f'{self.site_url}/{self.site_name}'
 
     log.debug(f'client_id: {self._redact(self.client_id)}')
     log.debug(f'client_secret: {self._redact(self.client_secret)}')
@@ -48,7 +49,7 @@ class SharePoint:
     """Validate that credentials can access Microsoft Graph."""
     try:
       if self.site_name:
-        site = self.client.sites.get_by_url(self.site_url).get().execute_query()
+        site = self.client.sites.get_by_url(self.site_uri).get().execute_query()
         log.info(f'✓ Successfully accessed site: {site.name}')
 
       return True
@@ -60,7 +61,7 @@ class SharePoint:
   def _get_site(self):
     """Get the SharePoint site object."""
     try:
-      site = self.client.sites.get_by_url(self.site_url).get().execute_query()
+      site = self.client.sites.get_by_url(self.site_uri).get().execute_query()
       return site
     except Exception as e:
       log.error(f'✗ Failed to get site: {e}')
