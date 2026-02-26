@@ -15,7 +15,7 @@ class SharePoint:
   ):
     """Initialize SharePoint client with Azure AD credentials using Microsoft Graph."""
     self.site_url = site_url or os.getenv(
-      'SITE_URL', 'https://justiceuk.sharepoint.com'
+      'SITE_URL', 'https://justiceuk.sharepoint.com/sites'
     )
     self.client_id = client_id or os.getenv('SP_CLIENT_ID', '')
     self.client_secret = client_secret or os.getenv('SP_CLIENT_SECRET', '')
