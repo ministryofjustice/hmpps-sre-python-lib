@@ -48,7 +48,8 @@ def _graph_site_chain(mock_graph_client):
 
 def _items_query_chain(mock_list):
   """Shortcut to .items.expand().paged().get().execute_query chain."""
-  return mock_list.items.expand.return_value.paged.return_value.get.return_value.execute_query
+  chain = mock_list.items.expand.return_value.paged.return_value
+  return chain.get.return_value.execute_query
 
 
 # =============================================================================
