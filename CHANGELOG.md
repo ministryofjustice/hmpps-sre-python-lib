@@ -18,3 +18,4 @@
 0.1.15  - Include a rest token when authenticating to Github using a private key
 
 1.0.0   - Refactored ServiceCatalogue and GithubSession classes to authenticate more consistently
+1.1.0   - Added SharePoint class and relevant tests
