@@ -23,3 +23,8 @@ build-backend = "hatchling.build"
 # Tell Hatch exactly which package directory to ship in the wheel:
 [tool.hatch.build.targets.wheel]
 packages = ["src/hmpps"]
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.0.0",
+]
