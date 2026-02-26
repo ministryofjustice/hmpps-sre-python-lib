@@ -22,6 +22,7 @@ class SharePoint:
     self.tenant_id = tenant_id or os.getenv('AZ_TENANT_ID', '')
     self.site_name = site_name or os.getenv('SITE_NAME', '')
     self.site_uri = f'{self.site_url}/{self.site_name}'
+    self.connection_ok = False
 
     log.debug(f'client_id: {self._redact(self.client_id)}')
     log.debug(f'client_secret: {self._redact(self.client_secret)}')
@@ -33,7 +34,7 @@ class SharePoint:
         client_id=self.client_id, client_secret=self.client_secret
       )
       log.info(
-        f'Successfully authenticated to Microsoft Graph with tenant: {tenant_id}'
+        f'Successfully authenticated to Microsoft Graph with tenant: {self.tenant_id}'
       )
     except Exception as e:
       log.error(f'Failed to authenticate to Microsoft Graph: {e}')
@@ -42,8 +43,13 @@ class SharePoint:
     try:
       # Get the site data
       self.site = self._get_site()
+      self.connection_ok = True
     except Exception as e:
       log.error(f'✗ Failed to get site information: {e}')
+
+    # Cached data for list processing
+    self.data = {}
+    self.dict = {}
 
   def validate_credentials(self):
     """Validate that credentials can access Microsoft Graph."""
@@ -297,3 +303,40 @@ class SharePoint:
     except Exception as e:
       log.error(f'✗ Failed to get list items: {e}')
       raise
+
+  """
+  Main call to sharepoint to return lists
+  """
+
+  def _load_list_contents(self, list_title):
+    """Load all items for a list, including fields, in Graph REST-like JSON shape."""
+    target_list = self._get_list(list_title)
+    if not target_list:
+      log.error(f"List '{list_title}' not found")
+      return None
+
+    list_items = target_list.items.expand(['fields']).paged(200).get().execute_query()
+    return {'value': [item.to_json() for item in list_items]}
+
+  def _make_dict(self, data):
+    dictionary = {item.get('id'): item for item in data.get('value')}
+    return dictionary
+
+  def load_sharepoint_lists(self, sp_lists):
+    for list_name in sp_lists:
+      log.info(f'Fetching SharePoint {list_name} data')
+      try:
+        items = self._load_list_contents(list_name)
+        if items is not None:
+          log.info(
+            f'found {len(items.get("value", []))} items in Sharepoint {list_name}'
+          )
+          self.data[list_name] = items
+          self.dict[list_name] = self._make_dict(items)
+        else:
+          self.data[list_name] = []
+          self.dict[list_name] = {}
+      except Exception as e:
+        log.error(f'Unable to retrieve data from Sharepoint for ${list_name} - {e}')
+
+    return None
