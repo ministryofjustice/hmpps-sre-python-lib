@@ -1,0 +1,30 @@
+name: Pipeline [test -> build -> deploy]
+
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+      - 'main'
+
+jobs:
+  python_lint:
+    name: python lint
+    uses: ministryofjustice/hmpps-github-actions/.github/workflows/test_python_lint.yml@v2 # WORKFLOW VERSION
+    secrets: inherit
+
+  pytest:
+    name: pytest - ${{ matrix.test }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - tests/clients/test_sharepoint.py
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run pytest suite
+        uses: ./.github/actions/run-pytest
+        with:
+          test-path: ${{ matrix.test }}

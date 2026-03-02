@@ -3,6 +3,7 @@ from .clients.github import GithubSession
 from .clients.service_catalogue import ServiceCatalogue
 from .clients.circleci import CircleCI
 from .clients.slack import Slack
+from .clients.sharepoint import SharePoint
 from .models.repository_info import (
   RepositoryInfoFactory,
   BasicRepositoryInfo,
@@ -20,6 +21,7 @@ __all__ = [
   'ServiceCatalogue',
   'CircleCI',
   'Slack',
+  'SharePoint',
   'RepositoryInfoFactory',
   'BasicRepositoryInfo',
   'RepositoryInfo',

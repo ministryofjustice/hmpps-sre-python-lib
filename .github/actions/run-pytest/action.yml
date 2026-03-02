@@ -1,0 +1,30 @@
+name: Run pytest suite
+description: Run a pytest test file with uv and fail on any test failure
+
+inputs:
+  test-path:
+    description: Path to the test file or directory (e.g. tests/clients/test_sharepoint.py)
+    required: true
+  python-version:
+    description: Python version to use
+    required: false
+    default: '3.13'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Install dependencies
+      shell: bash
+      run: uv sync
+
+    - name: Run pytest – ${{ inputs.test-path }}
+      shell: bash
+      run: uv run pytest ${{ inputs.test-path }} -v
