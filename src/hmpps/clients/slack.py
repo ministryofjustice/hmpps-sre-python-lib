@@ -29,7 +29,7 @@ class Slack:
   def test_connection(self):
     try:
       self.slack_client.api_test()
-      log_info('Successfully conected to Slack.')
+      log_info('Successfully connected to Slack.')
       return True
     except Exception as e:
       log_critical(f'Unable to connect to Slack. {e}')
@@ -76,3 +76,16 @@ class Slack:
       )
     except SlackApiError as e:
       log_error(f'Slack error: {e}')
+
+  def get_user_id_by_email(self, email):
+    log_debug(f'Looking up Slack user for email {email}')
+    try:
+      if result := self.slack_client.users_lookupByEmail(email=email):
+        user_id = result.get('user', {}).get('id')
+        return f'<@{user_id}>'
+    except SlackApiError as e:
+      if e.response['error'] == 'users_not_found':
+        log_warning(f'User with email {email} not found.')
+        return email
+      log_error(f'Error looking up user by email: {e}')
+      return email
