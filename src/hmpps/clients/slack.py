@@ -35,13 +35,15 @@ class Slack:
       log_critical(f'Unable to connect to Slack. {e}')
       return None
 
-  def get_slack_channel_name_by_id(self, slack_channel_id):
+  def get_slack_channel_name_by_id(self, slack_channel_id=''):
     log_debug(f'Getting Slack Channel Name for id {slack_channel_id}')
     slack_channel_name = None
     try:
-      slack_channel_name = self.slack_client.conversations_info(
-        channel=slack_channel_id
-      )['channel']['name']
+      slack_channel_name = (
+        self.slack_client.conversations_info(channel=slack_channel_id)
+        .get('channel', {})
+        .get('name', '')
+      )
     except SlackApiError as e:
       if 'channel_not_found' in str(e):
         log_info(
