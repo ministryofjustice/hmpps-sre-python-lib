@@ -19,3 +19,4 @@
 
 1.0.0   - Refactored ServiceCatalogue and GithubSession classes to authenticate more consistently
 1.1.0   - Added SharePoint class and relevant tests
+1.2.0   - Add functionality for Slack ID lookup from email adddress
