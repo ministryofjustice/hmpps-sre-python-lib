@@ -71,7 +71,6 @@ class ServiceCatalogue:
       f'[product]=true&populate[envs]=true{self.filter}{pagination_page_size}{sort_filter}'
     )
     self.products = 'products'
-
     self.products_get = (
       f'{self.products}?populate[parent]=true&populate[children]='
       'true&populate[product_set]=true&populate[service_area]=true&populate[team]=true'
@@ -221,11 +220,13 @@ class ServiceCatalogue:
   Get a single record by filter parameter from the Service Catalogue
   """
 
-  def get_record(self, table, label, parameter):
+  def get_record(self, table, label, parameter, populate=None):
     if '?' in table:  # add an extra parameter if there are already parameters
       filter = f'&filters[{label}][$eq]={parameter.replace("&", "&amp;")}'
     else:
       filter = f'?filters[{label}][$eq]={parameter.replace("&", "&amp;")}'
+    if populate:
+      filter += f'&populate[{populate}]=true'
     if json_data := self.get_with_retry(f'{table}{filter}'):
       return json_data[0]
     else:
