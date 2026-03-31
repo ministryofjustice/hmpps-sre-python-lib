@@ -1,10 +1,14 @@
 version: 2
 updates:
   - package-ecosystem: "pip"
+    cooldown:
+      default-days: 7
     directory: "/"  
     schedule:
       interval: "weekly"
   - package-ecosystem: "uv"
+    cooldown:
+      default-days: 7
     directory: "/"  
     schedule:
       interval: "weekly"
