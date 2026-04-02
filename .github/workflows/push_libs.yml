@@ -19,7 +19,8 @@ jobs:
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: '3.11'
-
+      - name: SLSA Supply Chain Security
+        uses: ministryofjustice/devsecops-actions/sca/slsa@559ec2408860d9237cc472a5710e61c1c2187ffa
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
