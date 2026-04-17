@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["hatchling>=1.24"]
+requires = ["hatchling>=1.29.0"]
 build-backend = "hatchling.build"
 
 # Tell Hatch exactly which package directory to ship in the wheel:
