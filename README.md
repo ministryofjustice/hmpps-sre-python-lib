@@ -72,6 +72,31 @@ to:
 CMD [ "uv" "run"  "python", "-u", "github_discovery.py" ]
 ```
 
+## Patching this repository
+
+Because this library forms the basis of many of our discovery and utility scripts, we need to make sure it remains up-to-date, tackling vulnerabilties and dependency updates in good time.
+
+If a core project module requires updating, follow the guidance in Dependabot.
+It may be that a vulnerability is discovered in a subcomponent. Running `uv sync` isn't enough to pick up the latest versions.
+
+For a specific library (for example ***Werkzeug*** in [this alert](https://github.com/ministryofjustice/hmpps-sre-python-lib/security/dependabot/5)), you can carry out a comamnd like this:
+
+```
+uv lock -P werkzeug
+uv sync
+```
+
+If the dependency graph for the app uses '>=', it will update to the latest supported version. Either way, check the latest version of `uv.lock` to confirm that the version is not affected by the vulnerability.
+
+For a broad refresh, you can use
+```
+uv lock -U
+uv sync
+```
+
+When the PR is merged, it will retain the existing tag. It will require redeployment of the utilities and scripts that use the libraries to pick up the latest verions.
+
+
 ## Cloning this repository
 
 If you're cloning this repository for the first time, you'll need to run
