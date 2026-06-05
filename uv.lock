@@ -311,10 +311,12 @@ name = "hmpps-sre-python-lib"
 version = "1.2.2"
 source = { editable = "." }
 dependencies = [
+    { name = "click" },
     { name = "flask" },
     { name = "gitpython" },
     { name = "office365-rest-python-client" },
     { name = "pygithub" },
+    { name = "pyjwt" },
     { name = "pytest" },
     { name = "pyyaml" },
     { name = "requests" },
@@ -329,10 +331,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "click", specifier = ">=8.4.1" },
     { name = "flask", specifier = ">=3.1.2" },
     { name = "gitpython", specifier = ">=3.1.50" },
     { name = "office365-rest-python-client", specifier = ">=2.6.2" },
     { name = "pygithub", specifier = ">=2.6.1" },
+    { name = "pyjwt", specifier = ">=2.13.0" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pyyaml", specifier = "==6.0.3" },
     { name = "requests", specifier = ">=2.34.2" },
