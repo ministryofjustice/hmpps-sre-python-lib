@@ -309,9 +309,13 @@ class ServiceCatalogue:
         json={'data': data},
       )
       if x.status_code == 201:
+        if 'snyk_id' in data:
+          display_name = data.get('snyk_vulnerability', 'unknown')
+        else:
+          display_name = data.get('team_name') or data.get('name', 'unknown')
         log_info(
           f'Successfully added '
-          f'{(data["team_name"] if "team_name" in data else data["name"])} '
+          f'{display_name} '
           f'to {table.split("/")[-1]}: {x.status_code}'
         )
       else:
