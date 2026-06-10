@@ -312,7 +312,7 @@ class ServiceCatalogue:
         if 'snyk_id' in data:
           display_name = data.get('snyk_id', 'unknown')
         else:
-          display_name = data.get('team_name') or data.get('name', 'unknown')
+          display_name = data.get('team_name') or data.get('snyk_id') or data.get('name', 'unknown')
         log_info(
           f'Successfully added '
           f'{display_name} '
