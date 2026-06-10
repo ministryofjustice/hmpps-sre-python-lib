@@ -310,7 +310,7 @@ class ServiceCatalogue:
       )
       if x.status_code == 201:
         if 'snyk_id' in data:
-          display_name = data.get('snyk_vulnerability', 'unknown')
+          display_name = data.get('snyk_id', 'unknown')
         else:
           display_name = data.get('team_name') or data.get('name', 'unknown')
         log_info(
