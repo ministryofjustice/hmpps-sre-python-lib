@@ -290,7 +290,7 @@ wheels = [
 
 [[package]]
 name = "hmpps-sre-python-lib"
-version = "1.2.5"
+version = "1.2.6"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
