@@ -21,8 +21,11 @@ concurrency:
 
 jobs:
   check-tag-availability:
+    outputs:
+      tag: ${{ steps.tag.outputs.value }}
+      tag_exists: ${{ steps.tag_exists.outputs.exists }}
     if: |
-      ((github.event_name == 'pull_request' && github.event.action != 'closed') ||
+      ((github.event_name == 'pull_request') ||
       (github.event_name == 'push' && github.ref_name != 'main')
       ) && (github.event_name != 'pull_request' || !contains(github.event.pull_request.user.login, 'dependabot'))
     runs-on: ubuntu-latest
@@ -32,6 +35,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == true && 'main' || github.ref_name }}
 
       - name: Extract version from pyproject.toml
         id: version
@@ -75,7 +79,7 @@ jobs:
           fi
 
       - name: Comment on PR when release tag already exists
-        if: github.event_name == 'pull_request' && steps.tag_exists.outputs.exists == 'true'
+        if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.tag_exists.outputs.exists == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -84,74 +88,18 @@ jobs:
           gh pr comment "$pr_number" --body "Release tag $tag already exists. Please bump version in pyproject.toml to a new version before merging."
 
       - name: Fail when release tag already exists
-        if: steps.tag_exists.outputs.exists == 'true'
+        if: |
+          ((github.event_name == 'pull_request' && github.event.action != 'closed') ||
+          (github.event_name == 'push' && github.ref_name != 'main')) &&
+          steps.tag_exists.outputs.exists == 'true'
         run: |
           tag="${{ steps.tag.outputs.value }}"
           echo "Release tag $tag already exists; failing this check to block merge."
           exit 1
 
-  prepare-release:
-    # Run only when the PR was actually merged (not just closed)
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot')
-    needs: check-tag-availability
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.tag.outputs.value }}
-      tag_exists: ${{ steps.tag_exists.outputs.exists }}
-
-    steps:
-      - name: Checkout main (post-merge)
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: main
-          fetch-depth: 0      # fetch all history & tags (needed for tagging)
-
-      - name: Extract version from pyproject.toml
-        id: version
-        shell: bash
-        run: |
-          python3 - <<'PY' > .version
-          import pathlib, sys
-          try:
-              import tomllib  # Python 3.11+
-          except Exception as e:
-              sys.exit(f"tomllib not available: {e}")
-          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
-          v = (data.get("project", {}).get("version")
-               or data.get("tool", {}).get("poetry", {}).get("version"))
-          if not v:
-              raise SystemExit("No version found in pyproject.toml (project.version or tool.poetry.version).")
-          print(v)
-          PY
-          echo "value=$(cat .version)" >> "$GITHUB_OUTPUT"
-
-      - name: Compute tag name (prefix with 'v')
-        id: tag
-        run: |
-          v="${{ steps.version.outputs.value }}"
-          if [[ "$v" != v* ]]; then tag="v$v"; else tag="$v"; fi
-          echo "value=$tag" >> "$GITHUB_OUTPUT"
-
-      - name: Check if tag already exists (local or remote)
-        id: tag_exists
-        run: |
-          tag="${{ steps.tag.outputs.value }}"
-          # check local
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # check remote
-          git fetch --tags --force --prune
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
   build-tag-release:
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot') && needs.prepare-release.outputs.tag_exists == 'false'
-    needs: prepare-release
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot') && needs.check-tag-availability.outputs.tag_exists == 'false'
+    needs: check-tag-availability
     runs-on: ubuntu-latest
 
     steps:
@@ -191,7 +139,7 @@ jobs:
 
       - name: Create and push annotated tag
         run: |
-          tag="${{ needs.prepare-release.outputs.tag }}"
+          tag="${{ needs.check-tag-availability.outputs.tag }}"
           git tag -a "$tag" -m "Release $tag"
           git push origin "$tag"
 
@@ -199,7 +147,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag="${{ needs.prepare-release.outputs.tag }}"
+          tag="${{ needs.check-tag-availability.outputs.tag }}"
           wheel="${{ steps.wheel.outputs.path }}"
           ruff_config=".ruff.toml"
           # Mark prereleases if version looks like a/b/rc (PEP 440-ish)
