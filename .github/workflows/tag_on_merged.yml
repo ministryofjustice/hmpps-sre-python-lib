@@ -79,7 +79,7 @@ jobs:
           fi
 
       - name: Comment on PR when release tag already exists
-        if: steps.tag_exists.outputs.exists == 'true' && (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+        if: steps.tag_exists.outputs.exists == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
