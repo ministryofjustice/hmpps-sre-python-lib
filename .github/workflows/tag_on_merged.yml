@@ -4,9 +4,6 @@ on:
   pull_request:
     types: [closed]
     branches: [main]        # Fire only for PRs targeting main
-    paths-ignore:
-      - '.github/workflows/**'
-      - '.github/actions/**'
 
 permissions:
   contents: write           # Needed to create tags and releases
@@ -16,26 +13,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check-tag-availability:
-    # Run only when PR is merged and not dependabot
-    outputs:
-      tag: ${{ steps.tag.outputs.value }}
-      tag_exists: ${{ steps.tag_exists.outputs.exists }}
-    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot')
+  build-tag-release:
+    # Run only when the PR was actually merged (not just closed)
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout main (post-merge)
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          fetch-depth: 0
           ref: main
+          fetch-depth: 0      # fetch all history & tags (needed for tagging)
 
       - name: Extract version from pyproject.toml
         id: version
         shell: bash
         run: |
-          python3 - <<'PY' > .version
+          python - <<'PY' > .version
           import pathlib, sys
           try:
               import tomllib  # Python 3.11+
@@ -57,44 +51,14 @@ jobs:
           if [[ "$v" != v* ]]; then tag="v$v"; else tag="$v"; fi
           echo "value=$tag" >> "$GITHUB_OUTPUT"
 
-      - name: Check if tag already exists (local or remote)
-        id: tag_exists
+      - name: Check if tag already exists (remote)
         run: |
           tag="${{ steps.tag.outputs.value }}"
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "Release tag $tag already exists. Exiting without creating wheel, tag, or release."
+            exit 1
           fi
-          git fetch --tags --force --prune
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  fail-if-tag-exists:
-    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot') && needs.check-tag-availability.outputs.tag_exists == 'true'
-    needs: check-tag-availability
-    runs-on: ubuntu-latest
-    steps:
-      - name: Stop release when tag exists
-        run: |
-          tag="${{ needs.check-tag-availability.outputs.tag }}"
-          echo "Release tag $tag already exists. This workflow will not overwrite existing tags or release assets."
-          exit 1
-
-  build-tag-release:
-    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot') && needs.check-tag-availability.outputs.tag_exists == 'false'
-    needs: check-tag-availability
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout main (post-merge)
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: main
-          fetch-depth: 0      # fetch all history & tags (needed for tagging)
-
+          
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
@@ -125,7 +89,7 @@ jobs:
 
       - name: Create and push annotated tag
         run: |
-          tag="${{ needs.check-tag-availability.outputs.tag }}"
+          tag="${{ steps.tag.outputs.value }}"
           git tag -a "$tag" -m "Release $tag"
           git push origin "$tag"
 
@@ -133,7 +97,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag="${{ needs.check-tag-availability.outputs.tag }}"
+          tag="${{ steps.tag.outputs.value }}"
           wheel="${{ steps.wheel.outputs.path }}"
           ruff_config=".ruff.toml"
           # Mark prereleases if version looks like a/b/rc (PEP 440-ish)
