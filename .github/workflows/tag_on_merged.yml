@@ -3,8 +3,8 @@ name: Build & Auto-Release from main
 on:
   push:
     branches-ignore: [main]
-    paths-ignore:
-      - '.github/workflows/**'
+    # paths-ignore:
+    #   - '.github/workflows/**'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, closed]
     branches: [main]        # Fire only for PRs targeting main
