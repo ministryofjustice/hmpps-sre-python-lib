@@ -89,6 +89,7 @@ jobs:
   prepare-release:
     # Run only when the PR was actually merged (not just closed)
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot')
+    needs: check-tag-availability
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.value }}
