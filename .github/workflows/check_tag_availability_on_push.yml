@@ -1,0 +1,88 @@
+name: Validate Tag Availability on Branch Push
+
+on:
+  push:
+    branches-ignore: [main]
+    paths-ignore:
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: tag-check-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  check-tag-availability:
+    if: ${{ !contains(github.actor, 'dependabot') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Extract version from pyproject.toml
+        id: version
+        shell: bash
+        run: |
+          python3 - <<'PY' > .version
+          import pathlib, sys
+          try:
+              import tomllib  # Python 3.11+
+          except Exception as e:
+              sys.exit(f"tomllib not available: {e}")
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+          v = (data.get("project", {}).get("version")
+               or data.get("tool", {}).get("poetry", {}).get("version"))
+          if not v:
+              raise SystemExit("No version found in pyproject.toml (project.version or tool.poetry.version).")
+          print(v)
+          PY
+          echo "value=$(cat .version)" >> "$GITHUB_OUTPUT"
+
+      - name: Compute tag name (prefix with 'v')
+        id: tag
+        run: |
+          v="${{ steps.version.outputs.value }}"
+          if [[ "$v" != v* ]]; then tag="v$v"; else tag="$v"; fi
+          echo "value=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Check if tag already exists (local or remote)
+        id: tag_exists
+        run: |
+          tag="${{ steps.tag.outputs.value }}"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --tags --force --prune
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment on PR when release tag already exists
+        if: steps.tag_exists.outputs.exists == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.tag.outputs.value }}"
+          pr_number=$(gh pr list --head "${GITHUB_REF_NAME}" --state open --json number --jq '.[0].number')
+          if [[ -n "$pr_number" && "$pr_number" != "null" ]]; then
+            gh pr comment "$pr_number" --body "Release tag $tag already exists. Please update the version in pyproject.toml, run 'uv sync -U' to regenerate uv.lock, and include both updated files in this PR."
+          else
+            echo "No open PR found for branch ${GITHUB_REF_NAME}; skipping PR comment."
+          fi
+
+      - name: Fail when release tag already exists
+        if: steps.tag_exists.outputs.exists == 'true'
+        run: |
+          tag="${{ steps.tag.outputs.value }}"
+          echo "Release tag $tag already exists. Bump version in pyproject.toml, run uv sync -U to update uv.lock, and commit both files."
+          exit 1

@@ -1,19 +1,15 @@
 name: Build & Auto-Release from main
 
 on:
-  push:
-    branches-ignore: [main]
-    # paths-ignore:
-    #   - '.github/workflows/**'
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, closed]
+    types: [closed]
     branches: [main]        # Fire only for PRs targeting main
     paths-ignore:
       - '.github/workflows/**'
+      - '.github/actions/**'
 
 permissions:
   contents: write           # Needed to create tags and releases
-  pull-requests: write      # Needed to comment on PR for tag conflicts
 
 concurrency:
   group: release-${{ github.ref_name }}
@@ -21,13 +17,11 @@ concurrency:
 
 jobs:
   check-tag-availability:
+    # Run only when PR is merged and not dependabot
     outputs:
       tag: ${{ steps.tag.outputs.value }}
       tag_exists: ${{ steps.tag_exists.outputs.exists }}
-    if: |
-      ((github.event_name == 'pull_request') ||
-      (github.event_name == 'push' && github.ref_name != 'main')
-      ) && (github.event_name != 'pull_request' || !contains(github.event.pull_request.user.login, 'dependabot'))
+    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot')
     runs-on: ubuntu-latest
 
     steps:
@@ -35,7 +29,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == true && 'main' || github.ref_name }}
+          ref: main
 
       - name: Extract version from pyproject.toml
         id: version
@@ -78,27 +72,19 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Comment on PR when release tag already exists
-        if: steps.tag_exists.outputs.exists == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  fail-if-tag-exists:
+    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot') && needs.check-tag-availability.outputs.tag_exists == 'true'
+    needs: check-tag-availability
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop release when tag exists
         run: |
-          tag="${{ steps.tag.outputs.value }}"
-          pr_number="${{ github.event.pull_request.number }}"
-          gh pr comment "$pr_number" --body "Release tag $tag already exists. Please update the version in pyproject.toml, run 'uv sync -U' to regenerate uv.lock, and include both updated files in this PR."
-
-      - name: Fail when release tag already exists
-        if: |
-          ((github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
-          (github.event_name == 'push' && github.ref_name != 'main')) &&
-          steps.tag_exists.outputs.exists == 'true'
-        run: |
-          tag="${{ steps.tag.outputs.value }}"
-          echo "Release tag $tag already exists; failing this check to block merge."
+          tag="${{ needs.check-tag-availability.outputs.tag }}"
+          echo "Release tag $tag already exists. This workflow will not overwrite existing tags or release assets."
           exit 1
 
   build-tag-release:
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot') && needs.check-tag-availability.outputs.tag_exists == 'false'
+    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.user.login, 'dependabot') && needs.check-tag-availability.outputs.tag_exists == 'false'
     needs: check-tag-availability
     runs-on: ubuntu-latest
 
