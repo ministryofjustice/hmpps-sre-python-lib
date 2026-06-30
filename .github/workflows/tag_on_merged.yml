@@ -85,7 +85,7 @@ jobs:
         run: |
           tag="${{ steps.tag.outputs.value }}"
           pr_number="${{ github.event.pull_request.number }}"
-          gh pr comment "$pr_number" --body "Release tag $tag already exists. Please bump version in pyproject.toml to a new version before merging."
+          gh pr comment "$pr_number" --body "Release tag $tag already exists. Please update the version in pyproject.toml, run 'uv sync -U' to regenerate uv.lock, and include both updated files in this PR."
 
       - name: Fail when release tag already exists
         if: |
