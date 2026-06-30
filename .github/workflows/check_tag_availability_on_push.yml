@@ -3,8 +3,8 @@ name: Validate Tag Availability on Branch Push
 on:
   push:
     branches-ignore: [main]
-    paths-ignore:
-      - '.github/workflows/**'
+    # paths-ignore:
+    #   - '.github/workflows/**'
 
 permissions:
   contents: read
