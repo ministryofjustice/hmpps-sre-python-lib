@@ -25,19 +25,6 @@ jobs:
           ref: main
           fetch-depth: 0      # fetch all history & tags (needed for tagging)
 
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
-        with:
-          python-version: '3.11'
-
-      - name: Install build tooling
-        run: |
-          python -m pip install --upgrade pip
-          pip install build
-
-      - name: Build wheel
-        run: python -m build
-
       - name: Extract version from pyproject.toml
         id: version
         shell: bash
@@ -64,6 +51,27 @@ jobs:
           if [[ "$v" != v* ]]; then tag="v$v"; else tag="$v"; fi
           echo "value=$tag" >> "$GITHUB_OUTPUT"
 
+      - name: Check if tag already exists (remote)
+        run: |
+          tag="${{ steps.tag.outputs.value }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "Release tag $tag already exists. Exiting without creating wheel, tag, or release."
+            exit 1
+          fi
+          
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: '3.11'
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build wheel
+        run: python -m build
+
       - name: Determine wheel asset
         id: wheel
         run: |
@@ -79,25 +87,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Check if tag already exists (local or remote)
-        id: tag_exists
-        run: |
-          tag="${{ steps.tag.outputs.value }}"
-          # check local
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # check remote
-          git fetch --tags --force --prune
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Create and push annotated tag
-        if: steps.tag_exists.outputs.exists == 'false'
         run: |
           tag="${{ steps.tag.outputs.value }}"
           git tag -a "$tag" -m "Release $tag"
@@ -115,11 +105,6 @@ jobs:
           if [[ "$tag" =~ a[0-9]*$ || "$tag" =~ b[0-9]*$ || "$tag" =~ rc[0-9]*$ ]]; then
             prerelease_flag="--prerelease"
           fi
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Release $tag exists; uploading asset (clobbering if present)."
-            gh release upload "$tag" "$wheel" "$ruff_config" --clobber 
-          else
-            gh release create "$tag" "$wheel" "$ruff_config" \
-              --title "$tag" \
-              --generate-notes $prerelease_flag
-          fi
+          gh release create "$tag" "$wheel" "$ruff_config" \
+            --title "$tag" \
+            --generate-notes $prerelease_flag
