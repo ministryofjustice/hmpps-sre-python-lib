@@ -3,8 +3,10 @@ name: Validate Tag Availability on Branch Push
 on:
   push:
     branches-ignore: [main]
-    paths-ignore:
-      - '.github/workflows/**'
+    paths:
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
 
 permissions:
   contents: read
@@ -23,8 +25,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          fetch-depth: 0
-          ref: main
+          ref: ${{ github.ref_name }}
 
       - name: Extract version from pyproject.toml
         id: version
