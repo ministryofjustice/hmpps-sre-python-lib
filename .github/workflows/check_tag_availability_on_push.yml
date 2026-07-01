@@ -1,7 +1,7 @@
 name: Validate Tag Availability on Branch Push
 
 on:
-  pull_request:
+  push:
     branches-ignore: [main]
     paths:
       - 'src/**'
@@ -25,7 +25,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          fetch-depth: 0
           ref: ${{ github.ref_name }}
 
       - name: Extract version from pyproject.toml
