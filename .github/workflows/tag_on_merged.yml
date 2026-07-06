@@ -107,3 +107,4 @@ jobs:
           gh release create "$tag" "$wheel" "$ruff_config" \
             --title "$tag" \
             --generate-notes $prerelease_flag
+ 
