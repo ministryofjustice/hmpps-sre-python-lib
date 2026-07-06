@@ -24,7 +24,6 @@ jobs:
         with:
           ref: main
           fetch-depth: 0      # fetch all history & tags (needed for tagging)
-
       - name: Extract version from pyproject.toml
         id: version
         shell: bash
@@ -60,7 +59,7 @@ jobs:
           fi
           
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.11'
 
@@ -108,3 +107,4 @@ jobs:
           gh release create "$tag" "$wheel" "$ruff_config" \
             --title "$tag" \
             --generate-notes $prerelease_flag
+ 
