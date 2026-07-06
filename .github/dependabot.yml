@@ -18,3 +18,8 @@ updates:
     directory: "/"  # Location of workflow files
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "ministryofjustice/hmpps-github-actions/*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
