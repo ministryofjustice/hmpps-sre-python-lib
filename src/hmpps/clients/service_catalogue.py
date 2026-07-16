@@ -15,11 +15,14 @@ from hmpps.services.job_log_handling import (
 from datetime import datetime
 
 
-def _set_page(url: str, page: int) -> str:
-  """Return `url` with pagination[page] set to `page`, preserving existing params."""
+def _set_page(url: str, page: int, page_size: Optional[int] = None) -> str:
+  """Return `url` with pagination params set, preserving existing query params."""
   parsed = urlparse(url)
   query = dict(parse_qsl(parsed.query, keep_blank_values=True))
   query['pagination[page]'] = str(page)
+  # Keep page size consistent across pages when the API omits it from the URL.
+  if page_size is not None and 'pagination[pageSize]' not in query:
+    query['pagination[pageSize]'] = str(page_size)
   new_query = urlencode(query, doseq=True)
   return urlunparse(parsed._replace(query=new_query))
 
@@ -159,25 +162,47 @@ class ServiceCatalogue:
     # First page
     try:
       first = self._request_json_with_retry(base_url, max_retries)
-      pagination = first['meta']['pagination']
-      log_debug(f'Got result page: {pagination["page"]} from Service Catalogue')
-      page_count = int(pagination.get('pageCount', 1))
-      json_data.extend(first.get('data', []))
+      pagination = first.get('meta', {}).get('pagination', {})
+      current_page = int(pagination.get('page', 1) or 1)
+      page_count = int(pagination.get('pageCount', 1) or 1)
+      page_size = int(pagination.get('pageSize', 0) or 0) or None
+      log_debug(f'Got result page: {current_page} from Service Catalogue')
+
+      first_page_data = first.get('data', [])
+      if isinstance(first_page_data, list):
+        json_data.extend(first_page_data)
+      else:
+        log_warning(
+          'Unexpected data format from Service Catalogue first page: '
+          f'{type(first_page_data)}'
+        )
     except Exception as e:
       log_error(f'Failed to get page data from Service Catalogue: {e}')
       # If meta/pagination missing, assume single page
       page_count = 1
+      page_size = None
 
     # Remaining pages (if any)
     for p in range(2, page_count + 1):
-      page_url = _set_page(base_url, p)
+      page_url = _set_page(base_url, p, page_size=page_size)
       try:
         page_json = self._request_json_with_retry(page_url, max_retries)
-        p_meta = page_json['meta']['pagination']
-        log_debug(f'Got result page: {p_meta["page"]} from Service Catalogue')
-        json_data.extend(page_json.get('data', []))
-      except Exception:
-        pass  # If pagination info missing, don't fail aggregation
+        p_meta = page_json.get('meta', {}).get('pagination', {})
+        p_num = int(p_meta.get('page', p) or p)
+        log_debug(f'Got result page: {p_num} from Service Catalogue')
+
+        page_data = page_json.get('data', [])
+        if isinstance(page_data, list):
+          json_data.extend(page_data)
+        else:
+          log_warning(
+            f'Unexpected data format from Service Catalogue page {p}: '
+            f'{type(page_data)}'
+          )
+      except Exception as e:
+        log_error(
+          f'Failed to get page {p}/{page_count} from Service Catalogue: {e}'
+        )
 
     return json_data
 
