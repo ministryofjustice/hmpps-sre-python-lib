@@ -72,6 +72,19 @@ to:
 CMD [ "uv" "run"  "python", "-u", "github_discovery.py" ]
 ```
 
+### Proxy Support For Outbound Requests
+
+Outbound HTTP requests made by this library automatically respect proxy settings from the environment.
+
+Set one or both of these variables in your runtime environment:
+
+```
+HTTP_PROXY=http://your-proxy:port
+HTTPS_PROXY=http://your-proxy:port
+```
+
+The library applies these values to `requests` calls (including shared sessions), and SDK clients (for example Slack and SharePoint Graph) use the same environment proxy settings.
+
 ## Patching this repository
 
 Because this library forms the basis of many of our discovery and utility scripts, we need to make sure it remains up-to-date, tackling vulnerabilties and dependency updates in good time.
