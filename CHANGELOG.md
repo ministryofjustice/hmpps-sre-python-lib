@@ -23,3 +23,4 @@
 1.2.1   - Added populate in get_record
 1.2.7   - Fixed get_all_records results when pagination has multiple pages 
 1.2.8   - Security fixes for SNYK-PYTHON-GITPYTHON-18170201, 18170131, 18170133, and 18170134
+1.2.9   - Added proxy support for outbound HTTP and SDK clients
