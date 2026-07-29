@@ -145,7 +145,7 @@ If you are moving an existing project to use `hmpps-sre-python-lib`:
     ```bash
     uv add <release-url-to-wheel>
     ```
-4.  **Rewrite & Clean up**: Update your imports to use the shared library and remove local copies of those files.
+4.  **Rewrite & Clean up**: Update your imports to use the shared library and remove local copies of those files - and `requirements.txt` can go, too, since it's not longer used.
 5.  **Qualify Imports**: The library is imported via `hmpps`. Example: `from hmpps.clients.github import GithubSession`.
 6.  **Fine-tuning Dependencies**: Remove unnecessary packages from `pyproject.toml` (like `requests` or `slack-sdk`) if they are already provided by this library. This avoids version clashes like:
     ```text
