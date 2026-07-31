@@ -1,19 +1,17 @@
 # hmpps-sre-python-lib
 
-A set of python libraries for use in hmpps SRE projects
+A set of shared Python libraries for use in HMPPS SRE projects.
 
-## Requirements
+## Overview
+This library provides common clients and models for interacting with HMPPS infrastructure, including GitHub, Slack, SharePoint, and the Service Catalogue.
 
-### Local development
-You need to have [uv](https://docs.astral.sh/uv/) installed on your machine to manage Python libraries - it's a very handy tool which takes the pain away from managing `pyproject.toml` files and `.venv` by acting as a wrapper for Python.
+## Getting Started
 
-```
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
+### Prerequisites
+You need to have [uv](https://docs.astral.sh/uv/) installed to manage Python libraries and environments.
 
-or
-
-```
+```bash
+# macOS (Homebrew)
 brew install uv
 ```
 
@@ -123,161 +121,146 @@ In fact, every time you pull down or refresh the project, it's worth running `uv
 
 ## Updating the library
 
-If you're making changes to the library, here's what needs to happen for it to be available:
-
-### New imported libraries 
-These are libraries required by scripts, which would normally be added to `requirements.txt`
-
-```
-uv add LIBRARY_NAME==version.number
-uv sync
+# Other platforms
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-This updates uv.lock, so it's ready to be pushed.
+### Local Development
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/ministryofjustice/hmpps-sre-python-lib.git
+    cd hmpps-sre-python-lib
+    ```
+2.  **Initialize the environment**:
+    ```bash
+    uv sync
+    ```
+    This creates a virtual environment (`.venv`) and installs all dependencies from `uv.lock`.
+3.  **Activate the environment**:
+    ```bash
+    source .venv/bin/activate
+    ```
+    Now you can run scripts or tests using `python` as usual, or use `uv run python your_script.py`.
 
-### Updating the documentation
+## Using this library in your project
 
-If a new function or component is available, please update files within the `docs` folder with the appropriate information.
-
-
-### Tagging the new version
-
-**Important** The `version` in `pyproject.toml` will be used as the release tag, so it's important to ensure this is updated.
-
-The standard [semver](https://semver.org/) formatting of the version should be used, without a 'v' prefix; this will be added in the Github Release.
-
-### Validating the library on other projects
-
-It's possible to import a version of the library from an active Github branch, so that it can be validated. 
-
-```
-uv remove hmpps-sre-python-lib
-uv add "hmpps-sre-python-lib @ git+https://github.com/ministryofjustice/hmpps-sre-python-lib.git@feat/HEAT-xxx_your_branch"
-uv sync
-```
-
-You can then run your script with `uv run python ...` or `source .venv/bin.activate && python ...` and check that it works.
-
-If you want to validate the library on a deployed version, you'll need to add `git` to the installed packages in Dockerfile, eg:
-```
-# add the necessary libraries
-RUN apk add --no-cache gcc python3-dev musl-dev linux-headers git ca-certificates && update-ca-certificates
-```
-
-# Formatting Before Git Commit
-
-Install Husky to enable pre-commit hooks for Python Ruff formatting.
+### 1. Adding the dependency
+To add this library to a project using `uv`, use the URL of the latest release wheel. You can find these in the [Releases section](https://github.com/ministryofjustice/hmpps-sre-python-lib/releases).
 
 ```bash
-npm install husky --save-dev
+uv add https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v1.2.9/hmpps_python_lib-1.2.9-py3-none-any.whl
 ```
 
-### Raising the PR and tagging the release
-
-Raise a PR once the library is fully validated, and once the PR has been merged, the release will be tagged automatically with the version in `pyproject.toml`.
-
-The library is then built into a [Python Wheel](https://discuss.python.org/t/where-the-name-wheel-comes-from/6708), and saved as a release asset.
-
-![Release Assets](docs/pics/release-assets.png)
-
-### Refreshing the version in other repositories
-
-If a tool is currently using the hmpps-sre-python-lib library, updating is as simple as either editing the pyproject.toml file in the project's root directory:
-
-(taking version 0.1.5 as an example by right-clicking the link in the Release Assets and selecting **Copy Link Address**) 
-```
-[tool.uv.sources]
-hmpps-sre-python-lib = { url = "https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v0.1.5/hmpps_python_lib-0.1.5-py3-none-any.whl" }
-```
-
-or you can do:
-```
-uv remove hmpps-sre-python-lib
-uv add https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v0.1.5/hmpps_python_lib-0.1.5-py3-none-any.whl
-```
-
-
-## Migrating to hmpps-sre-python-lib
-
-Migration comes in four parts:
-
-- Initiating the uv project
-- Rewriting the scripts so they use the shared library rather than the local imports
-- Removing local copies of the imports
-- Fine-tuning the pyproject.toml to remove unnecessary packages
-
-### Initiating the uv project
-
-First, a `pyproject.toml` is needed. Run:
-```
-uv init
-```
-
-Then, add the libraries currently mentioned in `requirements.txt` into the project:
-```
-uv add -r requirements.txt
-```
-
-Add the latest version of the `hmpps-sre-python-lib` library. This can be found in in the [releases section of the hmpps-sre-python-lib repository](https://github.com/ministryofjustice/hmpps-sre-python-lib/releases) - right click the corresponding wheel file (eg `hmpps_python_lib-0.0.3-py3-none-any.whl`) and Copy Link Address. 
-
-then run (for example):
-```
-uv add https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v0.0.3/hmpps_python_lib-0.0.3-py3-none-any.whl
-```
-
-Finally, run
-```
-uv sync
-```
-
-
-### Rewriting scripts
-
-The shared library is imported with the top level `hmpps`. There have been some semantic changes to the names of the subcomponents to better represent their function. See the `docs` folder for the supported classes, models, functions and values for further guidance.
-
-You may find that you get Pylance errors because it can't locate the libraries referred to by the `pyproject.toml` file. This is likely to be because there's already a `.venv` file in place. 
-
-- delete the .venv directory and its contents
-- run `uv sync` - this will create a new one
-- if necessary, close VSCode and open it up again.
-
-This tends to sort the problem out.
-
-### Removing local copies of the imports
-
-Once the libary is in use, tidy up the local filesystem. It may be that some functions within the same file (eg. utilities.py) need to remain, since they're specific to the particular script that's running. 
-
-If you've got Pylance working correctly, you should be able to delete the local files and quickly identify the bits you might have missed.
-
-### Fine-tuning the pyproject.toml to remove unnecessary packages
-
-Once the hmpps-sre-python-lib library is in use, it may well be that libraries such as `requests`, `slack-sdk` or `pygithub` that may have been picked up and placed within the `pyproject.toml` when are no longer required. To avoid version clases, and errors like this:
-
-```
-  × No solution found when resolving dependencies for split (markers: python_full_version >= '3.14' and platform_python_implementation != 'PyPy'):
-  ╰─▶ Because only hmpps-sre-python-lib==0.0.1 is available and hmpps-sre-python-lib==0.0.1 depends on requests>=2.32.5, we can conclude that all versions of hmpps-sre-python-lib depend on
-      requests>=2.32.5.
-      And because your project depends on hmpps-sre-python-lib and requests==2.32.4, we can conclude that your project's requirements are unsatisfiable.
-
-      hint: While the active Python version is 3.13, the resolution failed for other Python versions supported by your project. Consider limiting your project's supported Python versions
-      using `requires-python`.
-  help: If you want to add the package regardless of the failed resolution, provide the `--frozen` flag to skip locking and syncing.
-```
-
-...removing unnecessary dependencies is essential. It may, in fact, be that you don't need any additional dependencies, but others (for example dockerfile_parse) may  be specific for your project. Here, for example, is hmpps-github-discovery's pyrpoject.yaml:
-
-```
-[project]
-name = "hmpps-github-discovery"
-version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.13"
+Alternatively, edit your `pyproject.toml`:
+```toml
 dependencies = [
-    "dockerfile-parse==2.0.1",
     "hmpps-sre-python-lib"
 ]
 
 [tool.uv.sources]
-hmpps-sre-python-lib = { url = "https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v0.0.2/hmpps_python_lib-0.0.2-py3-none-any.whl" }
+hmpps-sre-python-lib = { url = "https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v1.2.9/hmpps_python_lib-1.2.9-py3-none-any.whl" }
 ```
+
+### 2. Usage in GitHub Actions
+Swap out `actions/setup-python` for `astral-sh/setup-uv`:
+
+```yaml
+- name: Install uv & set Python
+  uses: astral-sh/setup-uv@v6
+  with:
+    python-version: '3.13'
+    enable-cache: true
+    cache-dependency-glob: 'uv.lock'
+
+- name: Run script
+  run: uv run python scripts/my_script.py
+```
+
+### 3. Usage in Docker
+For HMPPS Python projects, you can use the MOJ standard images or the official `uv` image.
+
+**Standard Images:**
+- `ghcr.io/ministryofjustice/hmpps-python:python3.13-alpine`
+- `ghcr.io/astral-sh/uv:python3.13-bookworm-slim`
+
+To support `uv` in your Dockerfile:
+
+```dockerfile
+COPY pyproject.toml uv.lock ./
+# If using a non-uv image, you'll need to install uv first
+RUN uv sync --frozen
+# Example entrypoint
+CMD [ "uv", "run", "python", "-u", "my_script.py" ]
+```
+
+## Contributing
+
+### Making Changes
+1.  **Add dependencies**: Use `uv add <library>` to update `pyproject.toml` and `uv.lock`.
+2.  **Documentation**: Update relevant files in the `docs/` folder if you add new features.
+3.  **Formatting**: This project uses `ruff`. You can install Husky to enable pre-commit hooks:
+    ```bash
+    npm install husky --save-dev
+    ```
+4.  **Validation**: Test your changes in another project before merging. You can point `uv` directly at your branch:
+    ```bash
+    uv remove hmpps-sre-python-lib
+    uv add "hmpps-sre-python-lib @ git+https://github.com/ministryofjustice/hmpps-sre-python-lib.git@your-branch-name"
+    uv sync
+    ```
+
+    *Note: If validating on a deployed Docker container, you may need to ensure `git` is installed (e.g., `RUN apk add --no-cache git`).*
+
+### Releasing a new version
+This repository uses automated releases via GitHub Actions.
+
+1.  **Update the version** in `pyproject.toml` (following [SemVer](https://semver.org/)).
+2.  **Update `CHANGELOG.md`** with your changes.
+3.  **Sync the lockfile**: Run `uv lock`.
+4.  **Commit and push** to your branch.
+5.  **Merge the Pull Request** into `main`.
+
+Once merged, the release workflow will automatically:
+- Create a Git tag (e.g., `v1.2.9`).
+- Create a GitHub Release.
+- Build and upload the Python wheel asset.
+
+![Release Assets](docs/pics/release-assets.png)
+
+## Maintenance
+
+### Patching Vulnerabilities
+If Dependabot alerts you to a vulnerability, or you need to refresh dependencies:
+
+```bash
+# Refresh a specific library
+uv lock -P werkzeug
+# Refresh all libraries
+uv lock -U
+# Sync environment
+uv sync
+```
+
+---
+
+## Migration Guide
+If you are moving an existing project to use `hmpps-sre-python-lib`:
+
+1.  **Initialize uv**: `uv init`
+2.  **Import requirements**: `uv add -r requirements.txt`
+3.  **Add this library**: Find the latest wheel in [Releases](https://github.com/ministryofjustice/hmpps-sre-python-lib/releases) and run:
+    ```bash
+    uv add <release-url-to-wheel>
+    ```
+4.  **Rewrite & Clean up**: Update your imports to use the shared library and remove local copies of those files - and `requirements.txt` can go, too, since it's not longer used.
+5.  **Qualify Imports**: The library is imported via `hmpps`. Example: `from hmpps.clients.github import GithubSession`.
+6.  **Fine-tuning Dependencies**: Remove unnecessary packages from `pyproject.toml` (like `requests` or `slack-sdk`) if they are already provided by this library. This avoids version clashes like:
+    ```text
+    × No solution found when resolving dependencies:
+    ╰─▶ Because your project depends on hmpps-sre-python-lib and requests==2.32.4, 
+        and hmpps-sre-python-lib depends on requests>=2.32.5, resolution failed.
+    ```
+7.  **Troubleshooting Pylance**: If Pylance can't locate libraries despite `uv sync`:
+    - Delete the `.venv` directory.
+    - Run `uv sync` to recreate it.
+    - Restart VS Code if necessary.
