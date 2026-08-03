@@ -24,4 +24,4 @@
 1.2.7   - Fixed get_all_records results when pagination has multiple pages 
 1.2.8   - Security fixes for SNYK-PYTHON-GITPYTHON-18170201, 18170131, 18170133, and 18170134
 1.2.9   - Update GithubSession create_update_pr to use new slack channel alert fields
-1.2.10   - Added proxy support for outbound HTTP and SDK clients
+1.2.10  - Added proxy support for outbound HTTP and SDK clients
