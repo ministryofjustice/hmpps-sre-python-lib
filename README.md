@@ -56,7 +56,7 @@ If the python application has been developed locally (see [migration](#migrating
 
 ```
 COPY pyproject.toml .
-RUN uv pip install --user
+RUN uv sync
 ```
 
 The entrypoint will also need to be updated, from (for example):
