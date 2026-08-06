@@ -15,6 +15,7 @@ class AlertmanagerData:
         '.local:8080/alertmanager/status'
       )
     )
+    self.proxies = get_request_proxies()
     self.get_alertmanager_data()
 
   def get_alertmanager_data(self):
@@ -24,6 +25,7 @@ class AlertmanagerData:
         self.url,
         verify=False,
         timeout=5,
+        proxies=self.proxies
       )
       if response.status_code == 200:
         alertmanager_data = response.json()
