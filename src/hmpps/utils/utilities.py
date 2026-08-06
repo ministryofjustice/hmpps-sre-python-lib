@@ -5,13 +5,16 @@ def get_request_proxies():
   """Return requests-compatible proxies built from environment variables."""
   http_proxy = os.getenv('HTTP_PROXY') or os.getenv('http_proxy')
   https_proxy = os.getenv('HTTPS_PROXY') or os.getenv('https_proxy')
-
+  no_proxy = os.getenv('NO_PROXY') or os.getenv('no_proxy')
+  
   proxies = {}
   if http_proxy:
     proxies['http'] = http_proxy
   if https_proxy:
     proxies['https'] = https_proxy
-
+  if no_proxy:
+    proxies['no_proxy'] = no_proxy
+    
   return proxies or None
 
 
