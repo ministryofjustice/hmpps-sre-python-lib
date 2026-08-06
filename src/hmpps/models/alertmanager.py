@@ -2,8 +2,8 @@ import requests
 import yaml
 import json
 import os
+from hmpps.utils.utilities import get_request_proxies
 from hmpps.services.job_log_handling import log_debug, log_error, log_info
-
 
 class AlertmanagerData:
   def __init__(self, url: str = ''):
