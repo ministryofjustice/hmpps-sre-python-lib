@@ -25,7 +25,7 @@ class AlertmanagerData:
         self.url,
         verify=False,
         timeout=5,
-        proxies=self.proxies
+        proxies=self.proxies,
       )
       if response.status_code == 200:
         alertmanager_data = response.json()
