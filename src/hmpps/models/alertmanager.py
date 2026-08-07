@@ -2,7 +2,6 @@ import requests
 import yaml
 import json
 import os
-from hmpps.utils.utilities import get_request_proxies
 from hmpps.services.job_log_handling import log_debug, log_error, log_info
 
 class AlertmanagerData:
@@ -15,7 +14,6 @@ class AlertmanagerData:
         '.local:8080/alertmanager/status'
       )
     )
-    self.proxies = get_request_proxies()
     self.get_alertmanager_data()
 
   def get_alertmanager_data(self):
@@ -24,8 +22,7 @@ class AlertmanagerData:
       response = requests.get(
         self.url,
         verify=False,
-        timeout=5,
-        proxies=self.proxies,
+        timeout=5,     
       )
       if response.status_code == 200:
         alertmanager_data = response.json()

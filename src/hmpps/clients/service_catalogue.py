@@ -4,7 +4,6 @@ import time
 import os
 from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
-from hmpps.utils.utilities import get_request_proxies, apply_request_proxies_to_session
 from hmpps.services.job_log_handling import (
   log_debug,
   log_error,
@@ -55,8 +54,6 @@ class ServiceCatalogue:
     sort_filter = ''
 
     self.session = session or requests.Session()
-    self.proxies = get_request_proxies()
-    apply_request_proxies_to_session(self.session)
     # limit results for testing/dev
     # See strapi filter syntax
     #   https://docs.strapi.io/dev-docs/api/rest/filters-locale-publication
@@ -107,7 +104,6 @@ class ServiceCatalogue:
         f'{self.url}',
         headers=self.api_headers,
         timeout=self.timeout,
-        proxies=self.proxies,
       )
       log_info(
         f'Successfully connected to the Service Catalogue - {self.url}. {r.status_code}'
@@ -135,8 +131,7 @@ class ServiceCatalogue:
         resp = self.session.get(
           url,
           headers=self.api_headers,
-          timeout=self.timeout,
-          proxies=self.proxies,
+          timeout=self.timeout,        
         )
         resp.raise_for_status()  # Raises for non-2xx
         return resp.json()
@@ -278,8 +273,7 @@ class ServiceCatalogue:
         f'{self.url}/v1/{match_table}?filters[{match_field}][$eq]='
         f'{match_string.replace("&", "&amp;")}',
         headers=self.api_headers,
-        timeout=self.timeout,
-        proxies=self.proxies,
+        timeout=self.timeout,    
       )
       if r.status_code == 200 and r.json()['data']:
         sc_id = r.json()['data'][0]['id']
@@ -318,7 +312,6 @@ class ServiceCatalogue:
         headers=self.api_headers,
         json={'data': data},
         timeout=self.timeout,
-        proxies=self.proxies,
       )
       if x.status_code == 200:
         log_info(
@@ -348,7 +341,6 @@ class ServiceCatalogue:
         headers=self.api_headers,
         json={'data': data},
         timeout=self.timeout,
-        proxies=self.proxies,
       )
       if x.status_code == 201:
         display_name = (
@@ -381,7 +373,6 @@ class ServiceCatalogue:
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
         timeout=self.timeout,
-        proxies=self.proxies,
       )
       if 200 <= x.status_code < 300:
         log_info(
@@ -410,8 +401,7 @@ class ServiceCatalogue:
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
         json={'data': data},
-        timeout=self.timeout,
-        proxies=self.proxies,
+        timeout=self.timeout,   
       )
       if x.status_code == 200:
         log_info(
