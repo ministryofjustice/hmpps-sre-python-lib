@@ -25,4 +25,4 @@
 1.2.8   - Security fixes for SNYK-PYTHON-GITPYTHON-18170201, 18170131, 18170133, and 18170134
 1.2.9   - Update GithubSession create_update_pr to use new slack channel alert fields
 1.3.0   - Added proxy support for outbound HTTP and SDK clients
-1.3.1   - Update alertmanager URL to include FQDN.  Update proxy settings to support no_proxy option.
+1.3.1   - Update alertmanager URL to include FQDN and removed hardcoded proxy configuration.
