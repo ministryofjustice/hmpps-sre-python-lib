@@ -2,7 +2,6 @@ import os
 import logging
 import json
 from office365.graph_client import GraphClient
-from hmpps.utils.utilities import get_request_proxies
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +23,6 @@ class SharePoint:
     self.site_name = site_name or os.getenv('SITE_NAME', '')
     self.site_uri = f'{self.site_url}/{self.site_name}'
     self.connection_ok = False
-    self.proxies = get_request_proxies()
 
     log.debug(f'client_id: {self._redact(self.client_id)}')
     log.debug(f'client_secret: {self._redact(self.client_secret)}')
@@ -35,7 +33,6 @@ class SharePoint:
       self.client = GraphClient(tenant=self.tenant_id).with_client_secret(
         client_id=self.client_id, client_secret=self.client_secret
       )
-      self._configure_proxy()
       log.info(
         f'Successfully authenticated to Microsoft Graph with tenant: {self.tenant_id}'
       )
@@ -66,22 +63,6 @@ class SharePoint:
     except Exception as e:
       log.error(f'✗ Credential validation failed: {e}')
       return False
-
-  def _configure_proxy(self):
-    """Best-effort proxy setup for Microsoft Graph client requests."""
-    if not self.proxies:
-      return
-
-    try:
-      pending_request = self.client.pending_request()
-      if hasattr(pending_request, 'set_proxies'):
-        pending_request.set_proxies(self.proxies)
-      elif hasattr(pending_request, 'proxies'):
-        pending_request.proxies = self.proxies
-      else:
-        log.debug('Graph client proxy hooks unavailable; using environment proxy')
-    except Exception as e:
-      log.debug(f'Unable to set Graph client proxy directly: {e}')
 
   def _get_site(self):
     """Get the SharePoint site object."""

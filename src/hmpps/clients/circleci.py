@@ -1,7 +1,7 @@
 import requests
 import logging
 import os
-from hmpps.utils.utilities import update_dict, get_request_proxies
+from hmpps.utils.utilities import update_dict
 from hmpps.services.job_log_handling import (
   log_debug,
   log_info,
@@ -27,7 +27,6 @@ class CircleCI:
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     }
-    self.proxies = get_request_proxies()
 
   def test_connection(self):
     try:
@@ -35,7 +34,6 @@ class CircleCI:
         f'{self.url}hmpps-project-bootstrap',
         headers=self.headers,
         timeout=10,
-        proxies=self.proxies,
       )
       response.raise_for_status()
       log_info(f'CircleCI API: {response.status_code}')
@@ -51,7 +49,7 @@ class CircleCI:
     output_json_content = {}
     try:
       response = requests.get(
-        project_url, headers=self.headers, timeout=30, proxies=self.proxies
+        project_url, headers=self.headers, timeout=30,
       )
       artifacts_url = None
       for build_info in response.json():
@@ -66,7 +64,7 @@ class CircleCI:
       if artifacts_url:
         log_debug('Getting artifact URLs from CircleCI')
         response = requests.get(
-          artifacts_url, headers=self.headers, timeout=30, proxies=self.proxies
+          artifacts_url, headers=self.headers, timeout=30,
         )
 
         artifact_urls = response.json()
@@ -84,8 +82,7 @@ class CircleCI:
           response = requests.get(
             output_json_url,
             headers=self.headers,
-            timeout=30,
-            proxies=self.proxies,
+            timeout=30,         
           )
           logging.getLogger('urllib3').setLevel(log_level)
           output_json_content = response.json()

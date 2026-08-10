@@ -10,7 +10,6 @@ from github import Auth, Github
 from github import GithubException
 from github.GithubException import UnknownObjectException
 from datetime import datetime, timedelta, timezone
-from hmpps.utils.utilities import get_request_proxies
 from hmpps.services.job_log_handling import (
   log_debug,
   log_error,
@@ -44,7 +43,6 @@ class GithubSession:
       or os.environ.get('GITHUB_BOOTSTRAP_REPO', '')
       or 'hmpps-project-bootstrap'
     )
-    self.proxies = get_request_proxies()
 
     # Don't progress if there's no private key or access token
     if not self.app_private_key and not self.access_token:
@@ -125,8 +123,7 @@ class GithubSession:
     response = requests.post(
       f'https://api.github.com/app/installations/{self.app_installation_id}'
       '/access_tokens',
-      headers=headers,
-      proxies=self.proxies,
+      headers=headers,    
     )
     response.raise_for_status()
     return response.json()['token']
@@ -215,7 +212,7 @@ class GithubSession:
       # Make the request to check security and analysis settings
 
       # Check the response status
-      response = requests.get(url, headers=headers, proxies=self.proxies)
+      response = requests.get(url, headers=headers,)
       if response.status_code == 200:
         response_json = response.json()
       else:
@@ -508,7 +505,6 @@ class GithubSession:
         f'/{project_params["github_template_repo"]}/generate',
         headers=headers,
         json=data,
-        proxies=self.proxies,
       )
 
       if response.status_code == 201:
@@ -546,7 +542,6 @@ class GithubSession:
         f'https://api.github.com/orgs/{project_params["github_org"]}/repos',
         headers=headers,
         json=data,
-        proxies=self.proxies,
       )
 
       if response.status_code == 201:
@@ -595,7 +590,6 @@ class GithubSession:
       f'https://api.github.com/repos/{github_org}/{github_repo}',
       headers=headers,
       json=data,
-      proxies=self.proxies,
     )
 
     if response.status_code == 200:
@@ -622,8 +616,7 @@ class GithubSession:
     try:
       r = requests.get(
         f'https://api.github.com/orgs/{self.org.login}/actions/runner-groups',
-        headers=headers,
-        proxies=self.proxies,
+        headers=headers,      
       )
       r.raise_for_status()
       groups = r.json().get('runner_groups', [])
@@ -643,8 +636,7 @@ class GithubSession:
       r = requests.put(
         f'https://api.github.com/orgs/{self.org.login}/actions/runner-groups/'
         f'{runner_group_id}/repositories/{repo_id}',
-        headers=headers,
-        proxies=self.proxies,
+        headers=headers,     
       )
       r.raise_for_status()
       log_info(
