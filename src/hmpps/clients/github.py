@@ -616,19 +616,28 @@ class GithubSession:
     try:
       r = requests.get(
         f'https://api.github.com/orgs/{self.org.login}/actions/runner-groups',
-        headers=headers,      
+        headers=headers,
       )
       r.raise_for_status()
       groups = r.json().get('runner_groups', [])
-      if runner_group := next(g for g in groups if g['name'] == runner_group_name):
-        runner_group_id = runner_group['id']
-      else:
+      runner_group = next(
+        (g for g in groups if g.get('name') == runner_group_name),
+        None,
+      )
+      if not runner_group:
         log_error(
           f'Runner group {runner_group_name} not found -'
           f'not possible to add repository {repo_name} to runner group'
         )
         return False
-    except GithubException as e:
+      runner_group_id = runner_group.get('id')
+      if not runner_group_id:
+        log_error(
+          f'Runner group {runner_group_name} has no id - '
+          f'not possible to add repository {repo_name} to runner group'
+        )
+        return False
+    except requests.RequestException as e:
       log_error(f'Unable to get a list of runner groups: {e}')
       return False
 
@@ -636,14 +645,14 @@ class GithubSession:
       r = requests.put(
         f'https://api.github.com/orgs/{self.org.login}/actions/runner-groups/'
         f'{runner_group_id}/repositories/{repo_id}',
-        headers=headers,     
+        headers=headers,
       )
       r.raise_for_status()
       log_info(
         f'Repo {repo_name} added to runner group {runner_group_name}'
         f' (id: {runner_group_id}).'
       )
-    except GithubException as e:
+    except requests.RequestException as e:
       log_error(
         f'Unable to add repository {repo_name} to runner group {runner_group_name}: {e}'
       )

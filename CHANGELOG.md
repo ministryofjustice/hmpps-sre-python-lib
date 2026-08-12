@@ -26,3 +26,4 @@
 1.2.9   - Update GithubSession create_update_pr to use new slack channel alert fields
 1.3.0   - Added proxy support for outbound HTTP and SDK clients
 1.3.1   - Update alertmanager URL to include FQDN and removed hardcoded proxy configuration.
+1.3.2   - Added fix for add_repo_to_runner_group if no runner groups returned 
