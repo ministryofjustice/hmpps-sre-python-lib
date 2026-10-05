@@ -27,3 +27,4 @@
 1.3.0   - Added proxy support for outbound HTTP and SDK clients
 1.3.1   - Update alertmanager URL to include FQDN and removed hardcoded proxy configuration.
 1.3.2   - Added fix for add_repo_to_runner_group if no runner groups returned 
+1.3.5   - Added fix for pyjwt(2.13.0 -> 2.15.0)  and urllib3 (2.7.0 -> 2.8.0)
