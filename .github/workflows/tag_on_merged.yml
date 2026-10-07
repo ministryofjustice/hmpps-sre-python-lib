@@ -16,7 +16,7 @@ jobs:
   build-tag-release:
     # Run only when the PR was actually merged (not just closed)
     if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout main (post-merge)
