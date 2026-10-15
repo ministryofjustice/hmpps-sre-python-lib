@@ -55,6 +55,57 @@ class Slack:
     log_debug(f'Slack channel name for {slack_channel_id} is {slack_channel_name}')
     return slack_channel_name
 
+  def get_slack_channel_id_by_name(self, slack_channel_name=''):
+    log_debug(f'Getting Slack Channel ID for name {slack_channel_name}')
+    slack_channel_id = None
+
+    if not slack_channel_name:
+      log_info('Unable to get Slack channel ID - no channel name provided')
+      return slack_channel_id
+
+    # If caller passes a Slack channel ID already, return it unchanged.
+    if isinstance(slack_channel_name, str) and slack_channel_name.startswith(
+      ('C', 'G')
+    ):
+      log_debug(
+        f'Input {slack_channel_name} looks like a Slack channel ID, returning as-is'
+      )
+      return slack_channel_name
+
+    normalized_channel_name = str(slack_channel_name).lstrip('#')
+
+    try:
+      cursor = None
+      while True:
+        response = self.slack_client.conversations_list(
+          types='public_channel,private_channel',
+          exclude_archived=True,
+          limit=1000,
+          cursor=cursor,
+        )
+
+        channels = response.get('channels', [])
+        for channel in channels:
+          if channel.get('name') == normalized_channel_name:
+            slack_channel_id = channel.get('id')
+            log_debug(
+              f'Slack channel ID for {normalized_channel_name} is {slack_channel_id}'
+            )
+            return slack_channel_id
+
+        cursor = response.get('response_metadata', {}).get('next_cursor')
+        if not cursor:
+          break
+
+      log_info(
+        f'Unable to get Slack channel ID - channel {normalized_channel_name} not found'
+      )
+    except SlackApiError as e:
+      log_error(f'Slack error: {e}')
+
+    log_debug(f'Slack channel ID for {normalized_channel_name} is {slack_channel_id}')
+    return slack_channel_id
+
   def notify(self, message):
     if not self.notify_channel:
       log_warning('No notification channel set in config')
