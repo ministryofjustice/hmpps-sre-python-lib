@@ -4,6 +4,7 @@
 import json
 from dataclasses import dataclass, field
 from typing import Optional
+from github import GithubException
 from hmpps.services.job_log_handling import log_warning
 
 
@@ -12,6 +13,12 @@ class RepositoryInfoFactory:
   def from_github_repo(
     repo,
   ):
+    try:
+      custom_properties = getattr(repo, 'custom_properties', None)
+    except GithubException as e:
+      custom_properties = None
+      log_warning(f'Unable to get repository custom properties: {e}')
+
     basic_info = BasicRepositoryInfo(
       name=repo.name,
       visibility=repo.visibility,
@@ -21,6 +28,7 @@ class RepositoryInfoFactory:
       delete_branch_on_merge=repo.delete_branch_on_merge,
       has_issues=repo.has_issues,
       owner=repo.owner,
+      custom_properties=custom_properties,
     )
 
     security_and_analysis = repo.security_and_analysis
@@ -92,6 +100,7 @@ class BasicRepositoryInfo:
   license: Optional[str] = None
   has_issues: Optional[bool] = None
   owner: Optional[str] = None
+  custom_properties: Optional[dict[str, Optional[str] | list[str]]] = None
 
 
 @dataclass
