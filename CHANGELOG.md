@@ -29,3 +29,4 @@
 1.3.2   - Added fix for add_repo_to_runner_group if no runner groups returned 
 1.3.5   - Added fix for pyjwt(2.13.0 -> 2.15.0)  and urllib3 (2.7.0 -> 2.8.0)
 1.3.6   - slack: add function to get channel ID by channel name
+1.3.7   - Added fix for GitPython(SNYK-PYTHON-GITPYTHON-21692513) and certifi(SNYK-PYTHON-CERTIFI-21280764)
