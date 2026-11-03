@@ -145,10 +145,13 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ## Using this library in your project
 
 ### 1. Adding the dependency
-To add this library to a project using `uv`, use the URL of the latest release wheel. You can find these in the [Releases section](https://github.com/ministryofjustice/hmpps-sre-python-lib/releases).
+To add this library to a project using `uv`, copy a wheel URL from the
+[downloads page](https://ministryofjustice.github.io/hmpps-sre-python-lib/).
+Use a specific version so builds remain reproducible. For example, after version
+1.3.8 has been published to Pages:
 
 ```bash
-uv add https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v1.2.9/hmpps_python_lib-1.2.9-py3-none-any.whl
+uv add https://ministryofjustice.github.io/hmpps-sre-python-lib/hmpps_sre_python_lib-1.3.8-py3-none-any.whl
 ```
 
 Alternatively, edit your `pyproject.toml`:
@@ -158,8 +161,18 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-hmpps-sre-python-lib = { url = "https://github.com/ministryofjustice/hmpps-sre-python-lib/releases/download/v1.2.9/hmpps_python_lib-1.2.9-py3-none-any.whl" }
+hmpps-sre-python-lib = { url = "https://ministryofjustice.github.io/hmpps-sre-python-lib/hmpps_sre_python_lib-1.3.8-py3-none-any.whl" }
 ```
+
+For `pip`, the downloads page can also be used as a find-links source:
+
+```bash
+pip install --find-links https://ministryofjustice.github.io/hmpps-sre-python-lib/ hmpps-sre-python-lib==1.3.8
+```
+
+The shared Ruff configuration is available as
+[`ruff.toml`](https://ministryofjustice.github.io/hmpps-sre-python-lib/ruff.toml).
+Existing GitHub Release assets remain available to authenticated repository readers.
 
 ### 2. Usage in GitHub Actions
 Swap out `actions/setup-python` for `astral-sh/setup-uv`:
@@ -224,6 +237,32 @@ Once merged, the release workflow will automatically:
 - Create a Git tag (e.g., `v1.2.9`).
 - Create a GitHub Release.
 - Build and upload the Python wheel asset.
+- Preserve the wheel on the `gh-pages` branch and deploy the downloads page.
+
+The [release workflow](.github/workflows/push_libs.yml) handles both manually
+pushed version tags and calls from the merge workflow. It publishes only wheels,
+`ruff.toml`, and a download index. Older wheels already on `gh-pages` are retained;
+existing release assets are not automatically backfilled.
+
+### Pages setup
+
+- Keep the `gh-pages` branch available as the wheel archive; no branch-based Pages
+  build is needed.
+- In **Settings > Pages**, set **Source** to **GitHub Actions** (already configured).
+- Ensure the `github-pages` environment's deployment rules allow version tags
+  matching `v*.*.*`. Merge-triggered publication runs against `main`, so allow
+  that branch too.
+- Allow Actions to write repository contents and deploy Pages.
+- Keep the Pages site **public** if anonymous `pip`/`uv` downloads are required.
+  An internal repository can have a public Pages site when enterprise policy
+  permits it. Wheels contain Python source: making the repository internal does
+  not make the published library private. Private Pages requires browser-based
+  authentication and is not a drop-in package endpoint.
+
+The archive retains older wheels, while `ruff.toml` tracks the most recently
+published release. Only new publications appear on Pages; migrate consumers'
+existing release URLs to the corresponding Pages URLs once those wheels have
+been published.
 
 ![Release Assets](docs/pics/release-assets.png)
 
