@@ -71,3 +71,27 @@ def test_channel_id_lookup_returns_match_if_later_page_fails():
 
   assert slack.get_slack_channel_id_by_name('general') == 'C123'
   assert slack._channel_ids_by_name is None
+
+
+def test_channel_counterpart_uses_cached_channel_map():
+  slack = Slack(token='test-token')
+  slack.slack_client = MagicMock()
+  slack.slack_client.conversations_list.return_value = {
+    'channels': [{'name': 'general', 'id': 'C123'}],
+  }
+
+  assert slack.get_slack_channel_counterpart('general') == 'C123'
+  assert slack.get_slack_channel_counterpart('C123') == 'general'
+  assert slack.slack_client.conversations_list.call_count == 1
+  slack.slack_client.conversations_info.assert_not_called()
+
+
+def test_channel_counterpart_uses_info_endpoint_for_uncached_id():
+  slack = Slack(token='test-token')
+  slack.slack_client = MagicMock()
+  slack.slack_client.conversations_info.return_value = {
+    'channel': {'name': 'general'},
+  }
+
+  assert slack.get_slack_channel_counterpart('C123') == 'general'
+  slack.slack_client.conversations_info.assert_called_once_with(channel='C123')

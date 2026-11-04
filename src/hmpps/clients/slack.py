@@ -140,6 +140,51 @@ class Slack:
     log_debug(f'Slack channel ID for {normalized_channel_name} is {slack_channel_id}')
     return slack_channel_id
 
+  def get_slack_channel_counterpart(
+    self,
+    channel='',
+    *,
+    cache_ttl_seconds=None,
+    use_cache=True,
+  ):
+    """Return a channel ID for a name or a name for a channel ID.
+
+    Name lookups use the cached channel list. ID lookups use a valid cached
+    list when available, then fall back to Slack's conversations.info endpoint.
+    """
+    if not channel:
+      log_info('Unable to get Slack channel counterpart - no channel provided')
+      return None
+
+    # Channel IDs use C/G prefixes; names are looked up in the opposite direction.
+    if isinstance(channel, str) and channel.startswith(('C', 'G')):
+      cache_ttl_seconds = (
+        self._CHANNEL_IDS_CACHE_TTL_SECONDS
+        if cache_ttl_seconds is None
+        else cache_ttl_seconds
+      )
+      # Only a fully loaded, unexpired list can answer reverse lookups from cache.
+      cache_is_valid = (
+        use_cache
+        and self._channel_ids_by_name is not None
+        and time.monotonic() - self._channel_ids_cache_created_at
+        < cache_ttl_seconds
+      )
+      if cache_is_valid:
+        for channel_name, channel_id in self._channel_ids_by_name.items():
+          if channel_id == channel:
+            log_debug(f'Using cached Slack channel name for {channel}')
+            return channel_name
+
+      # The direct endpoint can resolve IDs missing from the cached channel list.
+      return self.get_slack_channel_name_by_id(channel)
+
+    return self.get_slack_channel_id_by_name(
+      channel,
+      cache_ttl_seconds=cache_ttl_seconds,
+      use_cache=use_cache,
+    )
+
   def notify(self, message):
     if not self.notify_channel:
       log_warning('No notification channel set in config')
