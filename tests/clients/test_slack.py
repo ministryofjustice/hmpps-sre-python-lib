@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
 
+from slack_sdk.errors import SlackApiError
+
 from hmpps.clients.slack import Slack
 
 
@@ -53,4 +55,19 @@ def test_channel_id_lookup_can_bypass_cache():
   assert slack.get_slack_channel_id_by_name('general', use_cache=False) == 'C123'
   assert slack.get_slack_channel_id_by_name('general', use_cache=False) == 'C456'
   assert slack.slack_client.conversations_list.call_count == 2
+  assert slack._channel_ids_by_name is None
+
+
+def test_channel_id_lookup_returns_match_if_later_page_fails():
+  slack = Slack(token='test-token')
+  slack.slack_client = MagicMock()
+  slack.slack_client.conversations_list.side_effect = [
+    {
+      'channels': [{'name': 'general', 'id': 'C123'}],
+      'response_metadata': {'next_cursor': 'next-page'},
+    },
+    SlackApiError('request failed', MagicMock()),
+  ]
+
+  assert slack.get_slack_channel_id_by_name('general') == 'C123'
   assert slack._channel_ids_by_name is None

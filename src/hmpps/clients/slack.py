@@ -94,6 +94,13 @@ class Slack:
       self._channel_ids_by_name is not None
       and time.monotonic() - self._channel_ids_cache_created_at < cache_ttl_seconds
     )
+    if not use_cache:
+      log_debug('Bypassing Slack channel ID cache')
+    elif cache_is_valid:
+      log_debug(f'Using cached Slack channel IDs for {normalized_channel_name}')
+    else:
+      log_debug(f'Refreshing Slack channel ID cache for {normalized_channel_name}')
+
     if not use_cache or not cache_is_valid:
       channel_ids_by_name = {}
       try:
@@ -121,7 +128,7 @@ class Slack:
           self._channel_ids_cache_created_at = time.monotonic()
       except SlackApiError as e:
         log_error(f'Slack error: {e}')
-        return None
+        return channel_ids_by_name.get(normalized_channel_name)
 
     channel_ids = self._channel_ids_by_name if use_cache else channel_ids_by_name
     slack_channel_id = channel_ids.get(normalized_channel_name)
