@@ -1,24 +1,38 @@
-name: Build and Release Python Wheel
+name: Build and Publish Python Wheel
 
 on:
   push:
     tags:
       - 'v*.*.*'  # Triggers on version tags like v1.0.0
+  workflow_call:
+    inputs:
+      ref:
+        description: Git tag to build and publish
+        required: true
+        type: string
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: publish-python-wheel
+  cancel-in-progress: false
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: '3.11'
+          python-version: '3.13'
 
       - name: Install build tools
         run: |
@@ -29,15 +43,82 @@ jobs:
         run: |
           python -m build
 
-      - name: Get wheel filename
-        id: get_wheel
+      - name: Determine release type
+        id: release-type
+        env:
+          RELEASE_TAG: ${{ inputs.ref || github.ref_name }}
         run: |
-          echo "WHEEL_FILE=$(ls dist/*.whl | head -n 1)" >> $GITHUB_ENV
+          prerelease=false
+          if [[ "$RELEASE_TAG" =~ a[0-9]*$ || "$RELEASE_TAG" =~ b[0-9]*$ || "$RELEASE_TAG" =~ rc[0-9]*$ ]]; then
+            prerelease=true
+          fi
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
+          tag_name: ${{ inputs.ref || github.ref_name }}
+          prerelease: ${{ steps.release-type.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
-            ${{ env.WHEEL_FILE }}
+            dist/*.whl
             .ruff.toml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout wheel archive
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: wheel-archive
+
+      - name: Prepare Pages downloads
+        shell: bash
+        run: |
+          cp dist/*.whl wheel-archive/
+          cp .ruff.toml wheel-archive/ruff.toml
+          mkdir _site
+          cp wheel-archive/*.whl wheel-archive/ruff.toml _site/
+          {
+            printf '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>HMPPS SRE Python library</title></head><body>\n'
+            printf '<h1>HMPPS SRE Python library</h1>\n<ul>\n'
+            for wheel in _site/*.whl; do
+              filename=$(basename "$wheel")
+              printf '<li><a href="%s">%s</a></li>\n' "$filename" "$filename"
+            done
+            printf '<li><a href="ruff.toml">Ruff configuration</a></li>\n</ul>\n</body></html>\n'
+          } > _site/index.html
+          cp _site/index.html wheel-archive/index.html
+
+      - name: Save wheel archive
+        working-directory: wheel-archive
+        env:
+          RELEASE_TAG: ${{ inputs.ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- '*.whl' ruff.toml index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish wheels for $RELEASE_TAG"
+            git push origin HEAD:gh-pages
+          fi
+
+      - name: Upload Pages site
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: _site
+
+  deploy-pages:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Pages site
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
