@@ -1,7 +1,10 @@
 import os
 import time
+from threading import Lock
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+from slack_sdk.http_retry import default_retry_handlers
+from slack_sdk.http_retry.builtin_handlers import RateLimitErrorRetryHandler
 from hmpps.services.job_log_handling import (
   log_debug,
   log_error,
@@ -22,11 +25,17 @@ class Slack:
     self.token = token or os.getenv('SLACK_BOT_TOKEN', '')
     self._channel_ids_by_name = None
     self._channel_ids_cache_created_at = 0
+    self._channel_ids_cache_lock = Lock()
 
     # Test auth and connection to Slack
     log_debug(f'Connecting to Slack with token ending {self.token[-4:]}')
     try:
-      self.slack_client = WebClient(token=self.token)
+      retry_handlers = default_retry_handlers()
+      retry_handlers.append(RateLimitErrorRetryHandler())
+      self.slack_client = WebClient(
+        token=self.token,
+        retry_handlers=retry_handlers,
+      )
     except Exception as e:
       log_critical(f'Unable to connect to Slack. {e}')
       return False
@@ -60,6 +69,37 @@ class Slack:
     log_debug(f'Slack channel name for {slack_channel_id} is {slack_channel_name}')
     return slack_channel_name
 
+  def _channel_ids_cache_is_valid(self, cache_ttl_seconds):
+    return (
+      self._channel_ids_by_name is not None
+      and time.monotonic() - self._channel_ids_cache_created_at < cache_ttl_seconds
+    )
+
+  def _fetch_channel_ids_by_name(self):
+    channel_ids_by_name = {}
+    cursor = None
+    try:
+      while True:
+        response = self.slack_client.conversations_list(
+          types='public_channel,private_channel',
+          exclude_archived=True,
+          limit=500,
+          cursor=cursor,
+        )
+
+        for channel in response.get('channels', []):
+          name = channel.get('name')
+          channel_id = channel.get('id')
+          if name and channel_id:
+            channel_ids_by_name[name] = channel_id
+
+        cursor = response.get('response_metadata', {}).get('next_cursor')
+        if not cursor:
+          return channel_ids_by_name, True
+    except SlackApiError as e:
+      log_error(f'Slack error: {e}')
+      return channel_ids_by_name, False
+
   def get_slack_channel_id_by_name(
     self,
     slack_channel_name='',
@@ -90,47 +130,26 @@ class Slack:
       else cache_ttl_seconds
     )
 
-    cache_is_valid = (
-      self._channel_ids_by_name is not None
-      and time.monotonic() - self._channel_ids_cache_created_at < cache_ttl_seconds
-    )
     if not use_cache:
       log_debug('Bypassing Slack channel ID cache')
-    elif cache_is_valid:
-      log_debug(f'Using cached Slack channel IDs for {normalized_channel_name}')
+      channel_ids, complete = self._fetch_channel_ids_by_name()
+      if not complete:
+        return channel_ids.get(normalized_channel_name)
     else:
-      log_debug(f'Refreshing Slack channel ID cache for {normalized_channel_name}')
+      if self._channel_ids_cache_is_valid(cache_ttl_seconds):
+        log_debug(f'Using cached Slack channel IDs for {normalized_channel_name}')
+      else:
+        log_debug(f'Refreshing Slack channel ID cache for {normalized_channel_name}')
+        with self._channel_ids_cache_lock:
+          if not self._channel_ids_cache_is_valid(cache_ttl_seconds):
+            channel_ids, complete = self._fetch_channel_ids_by_name()
+            if not complete:
+              return channel_ids.get(normalized_channel_name)
+            self._channel_ids_by_name = channel_ids
+            self._channel_ids_cache_created_at = time.monotonic()
 
-    if not use_cache or not cache_is_valid:
-      channel_ids_by_name = {}
-      try:
-        cursor = None
-        while True:
-          response = self.slack_client.conversations_list(
-            types='public_channel,private_channel',
-            exclude_archived=True,
-            limit=200,
-            cursor=cursor,
-          )
+      channel_ids = self._channel_ids_by_name
 
-          for channel in response.get('channels', []):
-            name = channel.get('name')
-            channel_id = channel.get('id')
-            if name and channel_id:
-              channel_ids_by_name[name] = channel_id
-
-          cursor = response.get('response_metadata', {}).get('next_cursor')
-          if not cursor:
-            break
-
-        if use_cache:
-          self._channel_ids_by_name = channel_ids_by_name
-          self._channel_ids_cache_created_at = time.monotonic()
-      except SlackApiError as e:
-        log_error(f'Slack error: {e}')
-        return channel_ids_by_name.get(normalized_channel_name)
-
-    channel_ids = self._channel_ids_by_name if use_cache else channel_ids_by_name
     slack_channel_id = channel_ids.get(normalized_channel_name)
     if not slack_channel_id:
       log_info(
