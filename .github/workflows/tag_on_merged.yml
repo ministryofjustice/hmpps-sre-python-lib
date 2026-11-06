@@ -1,9 +1,8 @@
 name: Build & Auto-Release from main
 
 on:
-  pull_request:
-    types: [closed]
-    branches: [main]        # Fire only for PRs targeting main
+  push:
+    branches: [main]
 
 permissions:
   contents: write           # Needed to create tags and releases
@@ -14,8 +13,6 @@ concurrency:
 
 jobs:
   prepare-release:
-    # Run only when the PR was actually merged (not just closed)
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.value }}
