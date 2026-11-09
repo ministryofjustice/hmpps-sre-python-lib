@@ -145,29 +145,62 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ## Using this library in your project
 
 ### 1. Adding the dependency
-To add this library to a project using `uv`, copy a wheel URL from the
-[downloads page](https://ministryofjustice.github.io/hmpps-sre-python-lib/).
-Use a specific version so builds remain reproducible. For example, after version
-1.3.8 has been published to Pages:
+Every published wheel is served from a [PEP 503](https://peps.python.org/pep-0503/)
+simple index at `https://ministryofjustice.github.io/hmpps-sre-python-lib/simple/`.
+Using it as a package index (rather than a direct wheel URL) lets `uv` resolve
+versions and lets Dependabot raise update PRs.
 
-```bash
-uv add https://ministryofjustice.github.io/hmpps-sre-python-lib/hmpps_sre_python_lib-1.3.8-py3-none-any.whl
-```
+Add the index to your `pyproject.toml`, marked `explicit` so it is only used for
+this library:
 
-Alternatively, edit your `pyproject.toml`:
 ```toml
 dependencies = [
-    "hmpps-sre-python-lib"
+    "hmpps-sre-python-lib>=1.3.10",
 ]
 
+[[tool.uv.index]]
+name = "hmpps-sre"
+url = "https://ministryofjustice.github.io/hmpps-sre-python-lib/simple/"
+explicit = true
+
 [tool.uv.sources]
-hmpps-sre-python-lib = { url = "https://ministryofjustice.github.io/hmpps-sre-python-lib/hmpps_sre_python_lib-1.3.8-py3-none-any.whl" }
+hmpps-sre-python-lib = { index = "hmpps-sre" }
 ```
 
-For `pip`, the downloads page can also be used as a find-links source:
+Then run `uv lock` (or `uv add "hmpps-sre-python-lib>=1.3.10"` once the index
+and source are configured).
+
+To let Dependabot update the library, add the index as a registry in
+`.github/dependabot.yml`. The index does not publish upload times, so exclude
+the library from any `cooldown`:
+
+```yaml
+version: 2
+registries:
+  hmpps-sre:
+    type: python-index
+    url: https://ministryofjustice.github.io/hmpps-sre-python-lib/simple/
+updates:
+  - package-ecosystem: uv
+    directory: /
+    registries:
+      - hmpps-sre
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      exclude:
+        - hmpps-sre-python-lib
+```
+
+Individual wheels are also listed on the
+[downloads page](https://ministryofjustice.github.io/hmpps-sre-python-lib/) and
+can still be used as direct URL sources, but Dependabot cannot update those.
+
+For `pip`:
 
 ```bash
-pip install --find-links https://ministryofjustice.github.io/hmpps-sre-python-lib/ hmpps-sre-python-lib==1.3.8
+pip install --extra-index-url https://ministryofjustice.github.io/hmpps-sre-python-lib/simple/ hmpps-sre-python-lib==1.3.10
 ```
 
 The shared Ruff configuration is available as
@@ -241,7 +274,8 @@ Once merged, the release workflow will automatically:
 
 The [release workflow](.github/workflows/push_libs.yml) handles both manually
 pushed version tags and calls from the merge workflow. It publishes only wheels,
-`ruff.toml`, and a download index. Older wheels already on `gh-pages` are retained;
+`ruff.toml`, a download index, and a PEP 503 simple index (`/simple/`) generated
+from every wheel in the archive. Older wheels already on `gh-pages` are retained;
 existing release assets are not automatically backfilled.
 
 ### Pages setup
