@@ -200,7 +200,7 @@ can still be used as direct URL sources, but Dependabot cannot update those.
 For `pip`:
 
 ```bash
-pip install --extra-index-url https://ministryofjustice.github.io/hmpps-sre-python-lib/simple/ hmpps-sre-python-lib==1.3.10
+pip install --extra-index-url https://ministryofjustice.github.io/hmpps-sre-python-lib/simple/ hmpps-sre-python-lib==1.3.12
 ```
 
 The shared Ruff configuration is available as
