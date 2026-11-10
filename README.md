@@ -155,7 +155,7 @@ this library:
 
 ```toml
 dependencies = [
-    "hmpps-sre-python-lib>=1.3.10",
+    "hmpps-sre-python-lib>=1.3.12",
 ]
 
 [[tool.uv.index]]
@@ -167,7 +167,7 @@ explicit = true
 hmpps-sre-python-lib = { index = "hmpps-sre" }
 ```
 
-Then run `uv lock` (or `uv add "hmpps-sre-python-lib>=1.3.10"` once the index
+Then run `uv lock` (or `uv add "hmpps-sre-python-lib>=1.3.12"` once the index
 and source are configured).
 
 To let Dependabot update the library, add the index as a registry in
