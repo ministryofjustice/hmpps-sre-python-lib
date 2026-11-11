@@ -25,6 +25,28 @@ and `python your_script.py` can be used as usual.
 
 ## Using hmpps-sre-python-lib in projects
 
+### pyproject.toml
+
+The recommendation is that the following is added to your pyproject.toml (once you've run `uv init`):
+
+```toml
+dependencies = [
+.
+.
+    "hmpps-sre-python-lib"
+]
+
+[[tool.uv.index]]
+name = "hmpps-sre"
+url = "https://ministryofjustice.github.io/hmpps-sre-python-lib/simple/"
+explicit = true
+
+[tool.uv.sources]
+hmpps-sre-python-lib = { index = "hmpps-sre" }
+```
+
+This adds the [hmpps-sre-python-lib PEP 503 repository](https://ministryofjustice.github.io/hmpps-sre-python-lib/simple) to the project sources so that it can direct Depdendabot / Renovate to pull the latest version. 
+
 ### Github Actions Workflows
 
 Any Github Action or Workflow running python will need the uv installation as well - that's as easy as swapping out the existing `actions/setup-python` section with `
@@ -155,7 +177,9 @@ this library:
 
 ```toml
 dependencies = [
-    "hmpps-sre-python-lib>=1.3.12",
+.
+.
+    "hmpps-sre-python-lib"
 ]
 
 [[tool.uv.index]]
