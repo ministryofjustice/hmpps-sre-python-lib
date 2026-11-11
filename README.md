@@ -23,96 +23,14 @@ source .venv/bin/activate
 and `python your_script.py` can be used as usual.
 
 
-## Using hmpps-sre-python-lib in projects
-
-### pyproject.toml
-
-The recommendation is that the following is added to your pyproject.toml (once you've run `uv init`):
-
-```toml
-dependencies = [
-.
-.
-    "hmpps-sre-python-lib"
-]
-
-[[tool.uv.index]]
-name = "hmpps-sre"
-url = "https://ministryofjustice.github.io/hmpps-sre-python-lib/simple/"
-explicit = true
-
-[tool.uv.sources]
-hmpps-sre-python-lib = { index = "hmpps-sre" }
-```
-
-This adds the [hmpps-sre-python-lib PEP 503 repository](https://ministryofjustice.github.io/hmpps-sre-python-lib/simple) to the project sources so that it can direct Depdendabot / Renovate to pull the latest version. 
-
-### Github Actions Workflows
-
-Any Github Action or Workflow running python will need the uv installation as well - that's as easy as swapping out the existing `actions/setup-python` section with `
-
-```
-  - name: Install uv & set Python
-    uses: astral-sh/setup-uv@v6
-    with:
-      python-version: '3.13'
-      enable-cache: true
-      cache-dependency-glob: 'uv.lock'   # cache invalidates on lockfile change
-```
-
-and then replacing any invocation of `python ...` with `uv run python ...` eg:
-
-```
-    run: uv run python scripts/actions_check_sc_requests.py >> "$GITHUB_OUTPUT"
-```
-
-### Docker Images
-
-In general, an image like `ghcr.io/ministryofjustice/hmpps-python:python3.13-alpine` will be used for existing Python scripts
-
-The most convenient way to support uv within a Docker container is to use the pre-packaged uv image, so:
-
-`ghcr.io/ministryofjustice/hmpps-python:python3.13-alpine` or `ghcr.io/astral-sh/uv:python3.13-bookworm-slim`
-
-If the python application has been developed locally (see [migration](#migrating-to-hmpps-sre-python-lib) below), a `pyproject.toml` file will already exist, in which case it's simply a case of adding these lines to the Dockerfile:
-
-```
-COPY pyproject.toml .
-RUN uv sync
-```
-
-The entrypoint will also need to be updated, from (for example):
-
-```
-CMD [ "python", "-u", "github_discovery.py" ]
-```
-
-to:
-```
-CMD [ "uv" "run"  "python", "-u", "github_discovery.py" ]
-```
-
-### Proxy Support For Outbound Requests
-
-Outbound HTTP requests made by this library automatically respect proxy settings from the environment.
-
-Set one or both of these variables in your runtime environment:
-
-```
-HTTP_PROXY=http://your-proxy:port
-HTTPS_PROXY=http://your-proxy:port
-```
-
-The library applies these values to `requests` calls (including shared sessions), and SDK clients (for example Slack and SharePoint Graph) use the same environment proxy settings.
-
 ## Patching this repository
 
-Because this library forms the basis of many of our discovery and utility scripts, we need to make sure it remains up-to-date, tackling vulnerabilties and dependency updates in good time.
+Because this library forms the basis of many of our discovery and utility scripts, we need to make sure it remains up-to-date, tackling vulnerabilities and dependency updates in good time.
 
 If a core project module requires updating, follow the guidance in Dependabot.
 It may be that a vulnerability is discovered in a subcomponent. Running `uv sync` isn't enough to pick up the latest versions.
 
-For a specific library (for example ***Werkzeug*** in [this alert](https://github.com/ministryofjustice/hmpps-sre-python-lib/security/dependabot/5)), you can carry out a comamnd like this:
+For a specific library (for example ***Werkzeug*** in [this alert](https://github.com/ministryofjustice/hmpps-sre-python-lib/security/dependabot/5)), you can carry out a command like this:
 
 ```
 uv lock -P werkzeug
@@ -127,7 +45,7 @@ uv lock -U
 uv sync
 ```
 
-When the PR is merged, it will retain the existing tag. It will require redeployment of the utilities and scripts that use the libraries to pick up the latest verions.
+When the PR is merged, it will retain the existing tag. It will require redeployment of the utilities and scripts that use the libraries to pick up the latest versions.
 
 
 ## Cloning this repository
@@ -142,10 +60,6 @@ In fact, every time you pull down or refresh the project, it's worth running `uv
 
 
 ## Updating the library
-
-# Other platforms
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
 
 ### Local Development
 1.  **Clone the repository**:
@@ -164,6 +78,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
     ```
     Now you can run scripts or tests using `python` as usual, or use `uv run python your_script.py`.
 
+
+
 ## Using this library in your project
 
 ### 1. Adding the dependency
@@ -177,8 +93,7 @@ this library:
 
 ```toml
 dependencies = [
-.
-.
+# ...your other dependencies
     "hmpps-sre-python-lib"
 ]
 
@@ -263,6 +178,21 @@ RUN uv sync --frozen
 CMD [ "uv", "run", "python", "-u", "my_script.py" ]
 ```
 
+
+### Proxy Support For Outbound Requests
+
+Outbound HTTP requests made by this library automatically respect proxy settings from the environment.
+
+Set one or both of these variables in your runtime environment:
+
+```
+HTTP_PROXY=http://your-proxy:port
+HTTPS_PROXY=http://your-proxy:port
+```
+
+The library applies these values to `requests` calls (including shared sessions), and SDK clients (for example Slack and SharePoint Graph) use the same environment proxy settings.
+
+
 ## Contributing
 
 ### Making Changes
@@ -317,11 +247,6 @@ existing release assets are not automatically backfilled.
   not make the published library private. Private Pages requires browser-based
   authentication and is not a drop-in package endpoint.
 
-The archive retains older wheels, while `ruff.toml` tracks the most recently
-published release. Only new publications appear on Pages; migrate consumers'
-existing release URLs to the corresponding Pages URLs once those wheels have
-been published.
-
 ![Release Assets](docs/pics/release-assets.png)
 
 ## Maintenance
@@ -349,7 +274,7 @@ If you are moving an existing project to use `hmpps-sre-python-lib`:
     ```bash
     uv add <release-url-to-wheel>
     ```
-4.  **Rewrite & Clean up**: Update your imports to use the shared library and remove local copies of those files - and `requirements.txt` can go, too, since it's not longer used.
+4.  **Rewrite & Clean up**: Update your imports to use the shared library and remove local copies of those files - and `requirements.txt` can go, too, since it's no longer used.
 5.  **Qualify Imports**: The library is imported via `hmpps`. Example: `from hmpps.clients.github import GithubSession`.
 6.  **Fine-tuning Dependencies**: Remove unnecessary packages from `pyproject.toml` (like `requests` or `slack-sdk`) if they are already provided by this library. This avoids version clashes like:
     ```text
