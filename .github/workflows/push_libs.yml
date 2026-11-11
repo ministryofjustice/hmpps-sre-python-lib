@@ -87,9 +87,24 @@ jobs:
               filename=$(basename "$wheel")
               printf '<li><a href="%s">%s</a></li>\n' "$filename" "$filename"
             done
-            printf '<li><a href="ruff.toml">Ruff configuration</a></li>\n</ul>\n</body></html>\n'
+            printf '<li><a href="ruff.toml">Ruff configuration</a></li>\n'
+            printf '<li><a href="simple/">PEP 503 simple index</a></li>\n</ul>\n</body></html>\n'
           } > _site/index.html
           cp _site/index.html wheel-archive/index.html
+
+          # PEP 503 simple repository index, so uv/pip/Dependabot can resolve versions
+          mkdir -p _site/simple/hmpps-sre-python-lib
+          printf '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>Simple index</title></head><body>\n<a href="hmpps-sre-python-lib/">hmpps-sre-python-lib</a>\n</body></html>\n' > _site/simple/index.html
+          {
+            printf '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>Links for hmpps-sre-python-lib</title></head><body>\n'
+            printf '<h1>Links for hmpps-sre-python-lib</h1>\n'
+            for wheel in _site/*.whl; do
+              filename=$(basename "$wheel")
+              hash=$(sha256sum "$wheel" | cut -d' ' -f1)
+              printf '<a href="../../%s#sha256=%s">%s</a><br/>\n' "$filename" "$hash" "$filename"
+            done
+            printf '</body></html>\n'
+          } > _site/simple/hmpps-sre-python-lib/index.html
 
       - name: Save wheel archive
         working-directory: wheel-archive
