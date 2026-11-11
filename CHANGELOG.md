@@ -33,5 +33,5 @@
 1.3.9   - Cache Slack channel ID lookups with configurable TTL and cache bypass
 1.3.10  - Publish to Github Pages as well as release artifacts
 1.3.11  - Minor fix to publish to Github Pages on the `main` branch rather than after a pull request
-1.3.12  - Implement PEP-503 repository format for the python library (better for dependencies)
+1.3.12  - Implement PEP 503 repository format for the python library (better for dependencies)
 1.3.13  - Improve documentation to migrate away from the existing release artifacts
