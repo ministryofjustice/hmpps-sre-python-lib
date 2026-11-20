@@ -59,10 +59,7 @@ class ServiceCatalogue:
     #   https://docs.strapi.io/dev-docs/api/rest/filters-locale-publication
     # Example filter string = '&filters[name][$contains]=example'
 
-    self.product_filter = (
-      '&fields[0]=slack_channel_id&fields[1]='
-      'slack_channel_name&fields[2]=p_id&fields[3]=name'
-    )
+    self.product_filter = '&fields[0]=slack_channel_id&fields[1]=p_id&fields[2]=name'
     self.api_headers = {
       'Authorization': f'Bearer {self.key}',
       'Content-Type': 'application/json',
@@ -131,7 +128,7 @@ class ServiceCatalogue:
         resp = self.session.get(
           url,
           headers=self.api_headers,
-          timeout=self.timeout,        
+          timeout=self.timeout,
         )
         resp.raise_for_status()  # Raises for non-2xx
         return resp.json()
@@ -202,13 +199,10 @@ class ServiceCatalogue:
           json_data.extend(page_data)
         else:
           log_warning(
-            f'Unexpected data format from Service Catalogue page {p}: '
-            f'{type(page_data)}'
+            f'Unexpected data format from Service Catalogue page {p}: {type(page_data)}'
           )
       except Exception as e:
-        log_error(
-          f'Failed to get page {p}/{page_count} from Service Catalogue: {e}'
-        )
+        log_error(f'Failed to get page {p}/{page_count} from Service Catalogue: {e}')
 
     return json_data
 
@@ -273,7 +267,7 @@ class ServiceCatalogue:
         f'{self.url}/v1/{match_table}?filters[{match_field}][$eq]='
         f'{match_string.replace("&", "&amp;")}',
         headers=self.api_headers,
-        timeout=self.timeout,    
+        timeout=self.timeout,
       )
       if r.status_code == 200 and r.json()['data']:
         sc_id = r.json()['data'][0]['id']
@@ -344,9 +338,7 @@ class ServiceCatalogue:
       )
       if x.status_code == 201:
         display_name = (
-          data.get('team_name')
-          or data.get('snyk_id')
-          or data.get('name', 'unknown')
+          data.get('team_name') or data.get('snyk_id') or data.get('name', 'unknown')
         )
         log_info(
           f'Successfully added '
@@ -401,7 +393,7 @@ class ServiceCatalogue:
         f'{self.url}/v1/{table}/{element_id}',
         headers=self.api_headers,
         json={'data': data},
-        timeout=self.timeout,   
+        timeout=self.timeout,
       )
       if x.status_code == 200:
         log_info(
